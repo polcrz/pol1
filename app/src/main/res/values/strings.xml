@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">My Application</string>
+    <string name="login">Login</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="forgot_password">Forgot password?</string>
+    <string name="click_to_sign_up">Click to Sign Up</string>
+    <string name="welcome_n_login_your_account">Welcome \n Login your Account</string>
+    <string name="logIn">Login</string>
+    <string name="signup">Signup</string>
+    <string name="sign_up">sign_up</string>
+    <string name="click_to_login">click to login</string>
+    <string name="create_n_account">Create \n Account</string>
+    <string name="name">Name</string>
+    <string name="reset_password">Reset Password</string>
+    <string name="forgot_pass">Forgot Password</string>
+    <string name="enter_your_email_address_to_reset">Enter your email address to reset</string>
+    <string name="email_address">Email</string>
+    <string name="inventory">Inventory</string>
+</resources>

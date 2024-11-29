@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "444509904663",
+    "firebase_url": "https://msis-f8cb8-default-rtdb.firebaseio.com",
+    "project_id": "msis-f8cb8",
+    "storage_bucket": "msis-f8cb8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:444509904663:android:02fa7be2dabd93d004e152",
+        "android_client_info": {
+          "package_name": "com.example.myapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCBZEPUWmy5LArPYz5HZed8DD_FXsybNaQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
