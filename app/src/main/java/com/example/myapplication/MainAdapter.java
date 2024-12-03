@@ -70,17 +70,14 @@ public class MainAdapter extends FirebaseRecyclerAdapter<InventoryModel, MainAda
                 EditText Quantity = view.findViewById(R.id.quantity);
 
 
+
+
                 Button btnUpdate = view.findViewById(R.id.btnUpdate);
 
                 Product.setText(model.getProduct());
                 Image.setText(model.getImage());
                 Price.setText(String.format("%.2f", model.getPrice()));
                 Quantity.setText(String.valueOf(model.getQuantity()));
-
-                Button btnUpdate = view.findViewById(R.id.btnUpdate);
-
-
-
 
 
 

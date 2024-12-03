@@ -73,7 +73,7 @@
                 android:layout_height="wrap_content"
                 android:text="Delete"
                 android:textAlignment="center"
-                android:gravity="center"
+                android:paddingRight="5dp"
                 android:textAllCaps="false"
                 android:layout_marginLeft="5dp"/>
 
