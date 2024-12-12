@@ -1,23 +1,20 @@
 package com.example.myapplication.Model;
 
 public class My_Models {
-    String email,name,password;
+    String name,email,password,role;
 
-    public My_Models(String email, String name, String password) {
-        this.email = email;
+
+
+
+    public My_Models(String name, String email, String password, String role) {
+
         this.name = name;
+        this.email = email;
         this.password = password;
+        this.role = role;
     }
 
     public My_Models() {
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public String getName() {
@@ -28,11 +25,27 @@ public class My_Models {
         this.name = name;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     public String getPassword() {
         return password;
     }
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

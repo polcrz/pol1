@@ -39,19 +39,16 @@ public class MainAdapter extends FirebaseRecyclerAdapter<InventoryModel, MainAda
     @SuppressLint("DefaultLocale")
     @Override
     protected void onBindViewHolder(@NonNull myViewHolder holder, @SuppressLint("RecyclerView") final int position, @NonNull InventoryModel model) {
-
+        //Inventory Holder
         holder.Product.setText(model.getProduct());
         holder.Quantity.setText(String.format("Quantity: %d", model.getQuantity()));
         holder.Price.setText(String.format("Price: ₱%.2f", model.getPrice()));
-
-
-
 
         Glide.with(holder.Img.getContext())
                 .load(model.getImage())
                 .placeholder(com.firebase.ui.database.R.drawable.common_google_signin_btn_icon_dark)
                 .circleCrop()
-                .error(com.google.android.gms.base.R.drawable.common_google_signin_btn_icon_dark_normal)
+                .error(com.firebase.ui.database.R.drawable.common_google_signin_btn_icon_light)
                 .into(holder.Img);
 
         holder.editBtn.setOnClickListener(new View.OnClickListener() {
@@ -86,13 +83,56 @@ public class MainAdapter extends FirebaseRecyclerAdapter<InventoryModel, MainAda
                 btnUpdate.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+                        // Retrieve input values
+                        String productName = Product.getText().toString().trim();
+                        String imageUrl = Image.getText().toString().trim();
+                        String priceInput = Price.getText().toString().trim();
+                        String quantityInput = Quantity.getText().toString().trim();
 
+                        // Validate fields
+                        if (productName.isEmpty() || imageUrl.isEmpty() || priceInput.isEmpty() || quantityInput.isEmpty()) {
+                            Toast.makeText(holder.Product.getContext(), "All fields are required.", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        boolean isPriceValid = true;
+                        boolean isQuantityValid = true;
+
+                        double price = 0;
+                        int quantity = 0;
+
+                        try {
+                            price = Double.parseDouble(priceInput); // Validate and parse price
+                        } catch (NumberFormatException e) {
+                            isPriceValid = false;
+                        }
+
+                        try {
+                            quantity = Integer.parseInt(quantityInput); // Validate and parse quantity
+                        } catch (NumberFormatException e) {
+                            isQuantityValid = false;
+                        }
+
+                        // Show appropriate error messages for invalid inputs
+                        if (!isPriceValid && !isQuantityValid) {
+                            Toast.makeText(holder.Product.getContext(), "Invalid price and quantity. Please enter numeric values.", Toast.LENGTH_SHORT).show();
+                            return;
+                        } else if (!isPriceValid) {
+                            Toast.makeText(holder.Product.getContext(), "Invalid price. Please enter a numeric value.", Toast.LENGTH_SHORT).show();
+                            return;
+                        } else if (!isQuantityValid) {
+                            Toast.makeText(holder.Product.getContext(), "Invalid quantity. Please enter a whole number.", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        // Create a map to store updated values
                         Map<String, Object> map = new HashMap<>();
-                        map.put("Product", Product.getText().toString());
-                        map.put("Image", Image.getText().toString());
-                        map.put("Price", Double.parseDouble(Price.getText().toString()));
-                        map.put("Quantity", Integer.parseInt(Quantity.getText().toString()));
+                        map.put("Product", productName);
+                        map.put("Image", imageUrl);
+                        map.put("Price", price);
+                        map.put("Quantity", quantity);
 
+                        // Update Firebase database
                         FirebaseDatabase.getInstance().getReference().child("Products")
                                 .child(getRef(position).getKey()).updateChildren(map)
                                 .addOnSuccessListener(new OnSuccessListener<Void>() {
@@ -100,22 +140,19 @@ public class MainAdapter extends FirebaseRecyclerAdapter<InventoryModel, MainAda
                                     public void onSuccess(Void unused) {
                                         Toast.makeText(holder.Product.getContext(), "Data Updated Successfully.", Toast.LENGTH_SHORT).show();
                                         dialogPlus.dismiss();
-
                                     }
                                 })
                                 .addOnFailureListener(new OnFailureListener() {
                                     @Override
                                     public void onFailure(@NonNull Exception e) {
-                                        Toast.makeText(holder.Product.getContext(), "Error While Updating.", Toast.LENGTH_SHORT).show();
-
+                                        Toast.makeText(holder.Product.getContext(), "You don't have permission to edit this data", Toast.LENGTH_SHORT).show();
                                         dialogPlus.dismiss();
-
                                     }
                                 });
-
-
                     }
                 });
+
+
             }
         });
 
@@ -159,9 +196,13 @@ public class MainAdapter extends FirebaseRecyclerAdapter<InventoryModel, MainAda
         TextView Product, Price, Quantity;
         Button editBtn, deleteBtn;
 
+
+
+
+
         public myViewHolder(@NonNull View itemView) {
             super(itemView);
-
+            // Inventory
             Img = itemView.findViewById(R.id.img1);
             Product = itemView.findViewById(R.id.product);
             Price = itemView.findViewById(R.id.Price);
@@ -169,6 +210,9 @@ public class MainAdapter extends FirebaseRecyclerAdapter<InventoryModel, MainAda
 
             editBtn = (Button) itemView.findViewById(R.id.edit_btn);
             deleteBtn = (Button) itemView.findViewById(R.id.delete_btn);
+
+
+
         }
     }
 }

@@ -6,12 +6,13 @@
 
 
     <TextView
+        android:layout_marginTop="25dp"
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:text="Add New Product"
         android:gravity="center"
         android:background="@color/purple_500"
-        android:textSize="25dp"
+        android:textSize="20dp"
         android:layout_gravity="center"
         android:textColor="#FFF"/>
 
@@ -54,6 +55,7 @@
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
         android:background="@drawable/rounded"
+        android:inputType="numberDecimal"
         android:gravity="center" />
 
     <TextView
@@ -72,6 +74,7 @@
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
         android:background="@drawable/rounded"
+        android:inputType="number"
         android:gravity="center" />
 
     <TextView
@@ -93,26 +96,25 @@
         android:gravity="center" />
 
     <Button
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="25dp"
-        android:layout_marginRight="25dp"
         android:layout_marginTop="20dp"
+        android:layout_gravity="center"
         android:text="Save"
-        android:textSize="21dp"
+        android:textSize="16dp"
         android:textAllCaps="false"
         android:background="@drawable/rounded"
         android:gravity="center"
         android:id="@+id/btnSave"/>
     <Button
-        android:layout_width="200dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="25dp"
         android:layout_marginRight="25dp"
         android:layout_marginTop="20dp"
         android:text="Back"
         android:layout_gravity="center"
-        android:textSize="21dp"
+        android:textSize="16dp"
         android:textAllCaps="false"
         android:background="@drawable/rounded"
         android:gravity="center"
