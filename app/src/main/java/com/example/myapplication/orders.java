@@ -320,112 +320,40 @@ public class orders extends BaseActivity {
     }
 
 
-
-    private double calculateDiscount(DataSnapshot orderSnapshot) {
-        double discount = 0.0;
-
-        // Iterate through the products in the order
-        for (DataSnapshot productSnapshot : orderSnapshot.child("Products").getChildren()) {
-            String productName = productSnapshot.child("Product").getValue(String.class);
-            Integer quantity = productSnapshot.child("Quantity").getValue(Integer.class);
-            Integer totalPrice = productSnapshot.child("TotalPrice").getValue(Integer.class); // Get TotalPrice for the product
-
-            // Log values for debugging
-            Log.d("Discount", "Product: " + productName + ", Quantity: " + quantity + ", TotalPrice: " + totalPrice);
-
-            if (productName != null && quantity != null && totalPrice != null) {
-                // Apply 20% discount on the TotalPrice for one unit
-                discount += totalPrice * 0.20;  // Apply discount on the total price of the product
-            }
-        }
-
-        Log.d("Discount", "Total Discount: " + discount); // Log the total discount calculated
-        return discount;
-    }
-
     private void applyDiscount() {
         if (originalTotalPrice <= 0) {
             Toast.makeText(this, "Order price not loaded yet.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Fetch order data from Firebase to apply discount logic
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            String userId = currentUser.getUid();
-            databaseReference.child("users").child(userId).child("orders").addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    // Assume we have a single order for simplicity
-                    for (DataSnapshot orderSnapshot : dataSnapshot.getChildren()) {
-                        // Fetch TotalOrderPrice from the order level
-                        Double totalOrderPrice = orderSnapshot.child("TotalOrderPrice").getValue(Double.class);
+        // Apply a 20% discount on the original total price
+        double discount = originalTotalPrice * 0.20;
+        double discountedPrice = originalTotalPrice - discount;
 
-                        if (totalOrderPrice != null) {
-                            // Log the total order price
-                            Log.d("Discount", "Total Order Price before discount: " + totalOrderPrice);
-
-                            // Apply discount to products
-                            double discount = calculateDiscount(orderSnapshot);
-                            double discountedPrice = totalOrderPrice - discount;
-
-                            // Log the discounted price
-                            Log.d("Discount", "Total Order Price after discount: " + discountedPrice);
-
-                            // Update the price displayed in the TextView
-                            tvOrderPrice.setText("Total Price: ₱" + String.format("%.2f", discountedPrice));
-                        } else {
-                            Log.e("Firebase", "TotalOrderPrice is missing in the database.");
-                        }
-
-                        break; // Assuming there's only one order
-                    }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    Log.e("Firebase", "Failed to fetch data: " + databaseError.getMessage());
-                }
-            });
-        }
+        // Update the price displayed in the TextView
+        tvOrderPrice.setText("Total Price: ₱" + String.format("%.2f", discountedPrice));
     }
 
-    private double calculateDiscountForInvoice(String orderId) {
-        final double[] discount = {0.0}; // Using an array to modify the discount value inside the listener
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+    private double calculateDiscount(DataSnapshot orderSnapshot) {
+        double highestPrice = 0.0;
 
-        if (currentUser != null) {
-            String userId = currentUser.getUid();
-            DatabaseReference orderRef = databaseReference.child(userId).child("orders").child(orderId);
+        // Iterate through the products in the order
+        for (DataSnapshot productSnapshot : orderSnapshot.child("Products").getChildren()) {
+            Integer unitPrice = productSnapshot.child("Price").getValue(Integer.class); // Get unit price of the product
 
-            orderRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    // Iterate through the products in the order
-                    for (DataSnapshot productSnapshot : dataSnapshot.child("Products").getChildren()) {
-                        String productName = productSnapshot.child("Product").getValue(String.class);
-                        Integer quantity = productSnapshot.child("Quantity").getValue(Integer.class);
-                        Integer unitPrice = productSnapshot.child("Price").getValue(Integer.class);  // Use unit price
-
-                        if (productName != null && quantity != null && unitPrice != null) {
-                            // Apply the discount for just one quantity (20% of unit price)
-                            discount[0] += unitPrice * 0.20; // Apply 20% discount on unit price (one quantity only)
-                        }
-                    }
+            if (unitPrice != null) {
+                // Find the highest unit price among the products
+                if (unitPrice > highestPrice) {
+                    highestPrice = unitPrice;
                 }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    Log.e("Firebase", "Failed to fetch data: " + databaseError.getMessage());
-                }
-            });
+            }
         }
 
-        return discount[0];
+        // Apply 20% discount to the highest initial price
+        double discount = highestPrice * 0.20;
+
+        return discount;
     }
-
-
-
 
     private void generateAndSaveInvoice(String vendorName, String currentDateAndTime, String userId, boolean isPwdSenior,
                                         String pwdName, String pwdId, String idIssued, String expirationDate, boolean isSenior) {
@@ -436,40 +364,53 @@ public class orders extends BaseActivity {
         String vatDetails = tvVatDetails.getText().toString().replace("VAT Details: ", "").trim();
         String totalPriceText = tvOrderPrice.getText().toString().replace("Total Price: ₱", "").trim();
 
-        double totalPrice = Double.parseDouble(totalPriceText); // This includes VAT
+        // Use a single-element array to hold the total price
+        final double[] totalPrice = {Double.parseDouble(totalPriceText)}; // This includes VAT
 
-        // Calculate the discount
-        double discount = calculateDiscountForInvoice(orderId);
-        double finalPrice = totalPrice - discount; // Subtract the discount
+        // Fetch order data from Firebase to calculate discount
+        DatabaseReference orderRef = databaseReference.child(userId).child("orders").child(orderId);
 
-        double cashPayment = Double.parseDouble(etCashPayment.getText().toString());
-        double change = cashPayment - finalPrice;
+        orderRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot orderSnapshot) {
+                double discount = calculateDiscount(orderSnapshot);
+                double finalPrice = totalPrice[0] - discount; // Apply the discount to the total price (with VAT)
 
-        // Round values to 2 decimal places for precision
-        totalPrice = Math.round(totalPrice * 100.0) / 100.0;
-        discount = Math.round(discount * 100.0) / 100.0;
-        finalPrice = Math.round(finalPrice * 100.0) / 100.0;
-        cashPayment = Math.round(cashPayment * 100.0) / 100.0;
-        change = Math.round(change * 100.0) / 100.0;
+                double cashPayment = Double.parseDouble(etCashPayment.getText().toString());
+                double change = cashPayment - finalPrice;
 
-        if (cashPayment < finalPrice) {
-            Toast.makeText(orders.this, "Insufficient cash payment.", Toast.LENGTH_SHORT).show();
-            return;
-        }
+                // Round values to 2 decimal places for precision
+                totalPrice[0] = Math.round(totalPrice[0] * 100.0) / 100.0;
+                discount = Math.round(discount * 100.0) / 100.0;
+                finalPrice = Math.round(finalPrice * 100.0) / 100.0;
+                cashPayment = Math.round(cashPayment * 100.0) / 100.0;
+                change = Math.round(change * 100.0) / 100.0;
 
-        // Create an Invoice object
-        Invoice invoice = new Invoice(invoiceNumber, vendorName, currentDateAndTime, orderId, orderDetails, itemPrices,
-                vatDetails, totalPrice, discount, finalPrice, cashPayment, change, pwdName, pwdId, idIssued, expirationDate, isSenior);
+                if (cashPayment < finalPrice) {
+                    Toast.makeText(orders.this, "Insufficient cash payment.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
-        // Save the invoice under the order node in Firebase
-        DatabaseReference ordersRef = FirebaseDatabase.getInstance().getReference("users").child(userId).child("orders").child(orderId);
-        ordersRef.child("Status").setValue("completed"); // Update the order status to completed
-        ordersRef.child("Invoice").setValue(invoice); // Save the invoice data
+                // Create an Invoice object
+                Invoice invoice = new Invoice(invoiceNumber, vendorName, currentDateAndTime, orderId, orderDetails, itemPrices,
+                        vatDetails, totalPrice[0], discount, finalPrice, cashPayment, change, pwdName, pwdId, idIssued, expirationDate, isSenior);
 
-        // Launch InvoiceActivity with invoice details
-        Intent intent = new Intent(orders.this, InvoiceActivity.class);
-        intent.putExtra("invoice", invoice); // Pass the Invoice object
-        startActivity(intent);
+                // Save the invoice under the order node in Firebase
+                DatabaseReference ordersRef = FirebaseDatabase.getInstance().getReference("users").child(userId).child("orders").child(orderId);
+                ordersRef.child("Status").setValue("completed"); // Update the order status to completed
+                ordersRef.child("Invoice").setValue(invoice); // Save the invoice data
+
+                // Launch InvoiceActivity with invoice details
+                Intent intent = new Intent(orders.this, InvoiceActivity.class);
+                intent.putExtra("invoice", invoice); // Pass the Invoice object
+                startActivity(intent);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e("Firebase", "Failed to fetch order data: " + databaseError.getMessage());
+            }
+        });
     }
 
     private void generateSalesInvoice(boolean isPwdSenior, String pwdName, String pwdId, String idIssued, String expirationDate, boolean isSenior) {
