@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawer_layout"
@@ -7,12 +8,10 @@
     android:layout_height="match_parent"
     tools:context=".SalesRecord">
 
-
-    <!-- Navigation Drawer -->
+    <!-- Main Content -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
         <!-- Toolbar -->
         <androidx.appcompat.widget.Toolbar
@@ -22,26 +21,105 @@
             android:background="?attr/colorPrimary"
             android:elevation="4dp"
             android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="1.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/salesHistory"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Sales Record"
-            android:textSize="20sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.136"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.183" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
+        <!-- ScrollView for Sales Record -->
+        <ScrollView
+            android:id="@+id/scrollView2"
+            android:layout_width="match_parent"
+            android:layout_height="500dp"
+            android:layout_margin="10dp"
+            app:layout_constraintTop_toBottomOf="@id/toolbar"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Complete Invoice Record for\nTasty Siomai Refreshment Kiosk "
+                    android:textSize="25sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Example for more content -->
+                <TextView
+                    android:id="@+id/salesHistoryTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="2dp"
+                    android:text=""
+                    android:textSize="18sp" />
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- CardView for Summary -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Daily Sales -->
+                <TextView
+                    android:id="@+id/dailySalesTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Daily Sales: "
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <!-- Weekly Sales -->
+                <TextView
+                    android:id="@+id/weeklySalesTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Weekly Sales: "
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Monthly Sales -->
+                <TextView
+                    android:id="@+id/monthlySalesTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Monthly Sales: "
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Yearly Sales -->
+                <TextView
+                    android:id="@+id/yearlySalesTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Yearly Sales: "
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <!-- Navigation Drawer -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigation_view"
         android:layout_width="wrap_content"
@@ -49,7 +127,5 @@
         android:layout_gravity="start"
         android:background="@android:color/white"
         app:menu="@menu/drawer_menu" />
-
-
 
 </androidx.drawerlayout.widget.DrawerLayout>

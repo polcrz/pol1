@@ -44,12 +44,12 @@ public class LoginActivity extends AppCompatActivity {
         progressDialog.setTitle("Logging in");
         progressDialog.setMessage("Please Wait");
 
-        binding.SignupNow.setOnClickListener(new View.OnClickListener() {
+        /*binding.SignupNow.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 startActivity(new Intent(LoginActivity.this, SignUpActivity.class));
             }
-        });
+        });*/
 
         binding.btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -75,13 +75,10 @@ public class LoginActivity extends AppCompatActivity {
                                         public void onComplete(@NonNull Task<DataSnapshot> task) {
                                             if (task.isSuccessful() && task.getResult() != null) {
                                                 DataSnapshot snapshot = task.getResult();
-                                                // Get user data, for example:
-                                                String username = snapshot.child("username").getValue(String.class);
-                                                // You can use this data as needed
+                                                String role = snapshot.child("role").getValue(String.class); // Get user role
 
                                                 progressDialog.dismiss();
-                                                startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                                                finish();
+                                                navigateBasedOnRole(role); // Navigate based on role
                                             } else {
                                                 progressDialog.dismiss();
                                                 Toast.makeText(LoginActivity.this, "Failed to fetch user data", Toast.LENGTH_SHORT).show();
@@ -116,5 +113,38 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(new Intent(LoginActivity.this, MainActivity.class));
             finish(); // Close LoginActivity to prevent returning to it
         }
+    }
+
+    // Method to navigate based on the user's role
+    private void navigateBasedOnRole(String role) {
+        if (role == null) {
+            Toast.makeText(this, "Role not assigned to the user.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent;
+        switch (role.toLowerCase()) {
+            case "admin":
+            case "superadmin": // Changed "super admin" to "superadmin"
+                intent = new Intent(LoginActivity.this, adminSuperAdmin.class);
+                break;
+            case "vendor":
+                intent = new Intent(LoginActivity.this, MainActivity.class);
+                break;
+            default:
+                Toast.makeText(this, "Invalid role: " + role, Toast.LENGTH_SHORT).show();
+                return;
+        }
+
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        // Disable back navigation by finishing the activity
+        finishAffinity(); // Closes all activities and exits the app
     }
 }

@@ -2,9 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:requestLegacyExternalStorage="true"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -14,6 +18,38 @@
         android:theme="@style/Theme.MyApplication"
         tools:targetApi="31">
         <activity
+            android:name=".AdminsuperReports"
+            android:exported="false" />
+        <activity
+            android:name=".InvoiceActivity"
+            android:exported="false" />
+        <activity
+            android:name=".orders"
+            android:exported="false" />
+        <activity
+            android:name=".adminMyProfile"
+            android:exported="false" />
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:label="Splash Screen"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity> <!-- Other activities -->
+        <activity
+            android:name=".inventoryPopUp"
+            android:exported="false" />
+        <activity
+            android:name=".salesPopUp"
+            android:exported="false" />
+        <activity
+            android:name=".adminSuperAdmin"
+            android:exported="false" />
+        <activity
             android:name=".Profile"
             android:exported="false" />
         <activity
@@ -21,9 +57,6 @@
             android:exported="false" />
         <activity
             android:name=".Accounts"
-            android:exported="false" />
-        <activity
-            android:name=".Settings"
             android:exported="false" />
         <activity
             android:name=".SalesRecord"
@@ -52,13 +85,7 @@
             android:exported="false" />
         <activity
             android:name=".LoginActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="true" />
     </application>
 
 </manifest>

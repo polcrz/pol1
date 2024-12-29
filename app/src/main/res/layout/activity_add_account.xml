@@ -6,7 +6,6 @@
     android:orientation="vertical"
     tools:context=".AddAccount">
 
-
     <TextView
         android:layout_marginTop="25dp"
         android:layout_width="match_parent"
@@ -16,11 +15,9 @@
         android:background="@color/purple_500"
         android:textSize="20dp"
         android:layout_gravity="center"
-        android:textColor="#FFF"/>
+        android:textColor="#FFF" />
 
     <TextView
-
-
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="left"
@@ -28,7 +25,7 @@
         android:layout_marginTop="25dp"
         android:layout_marginBottom="5dp"
         android:layout_marginStart="15dp"
-        android:text="Name"/>
+        android:text="Name" />
 
     <EditText
         android:id="@+id/name"
@@ -36,9 +33,7 @@
         android:layout_height="40dp"
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
-
         android:gravity="center" />
-
 
     <TextView
         android:layout_width="wrap_content"
@@ -67,7 +62,7 @@
         android:layout_marginTop="25dp"
         android:layout_marginBottom="5dp"
         android:layout_marginStart="15dp"
-        android:text="Password"/>
+        android:text="Password" />
 
     <EditText
         android:id="@+id/password"
@@ -86,19 +81,17 @@
         android:layout_marginTop="25dp"
         android:layout_marginBottom="5dp"
         android:layout_marginStart="15dp"
-        android:text="Role"/>
+        android:text="Role" />
 
-
-    <EditText
-        android:id="@+id/role"
+    <!-- Spinner for Role Selection -->
+    <Spinner
+        android:id="@+id/roleSpinner"
         android:layout_width="match_parent"
         android:layout_height="40dp"
         android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
-        android:gravity="center" />
+        android:layout_marginRight="10dp" />
 
     <Button
-
         android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:text="Add Account"
@@ -108,7 +101,7 @@
         android:textAllCaps="false"
         android:background="@drawable/rounded"
         android:gravity="center"
-        android:id="@+id/addAccount"/>
+        android:id="@+id/addAccount" />
 
     <Button
         android:layout_width="100dp"
@@ -121,6 +114,6 @@
         android:textAllCaps="false"
         android:background="@drawable/rounded"
         android:gravity="center"
-        android:id="@+id/btnBack"/>
+        android:id="@+id/btnBack" />
 
 </LinearLayout>

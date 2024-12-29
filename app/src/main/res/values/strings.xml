@@ -24,6 +24,15 @@
     <string name="previous">Previous</string>
     <string name="open_nav">Open Navigation Drawer</string>
     <string name="close_nav">Close Navigation Drawer</string>
+
+
+    <string-array name="roles_array">
+        <item>Select Role</item> <!-- This is the hint -->
+        <item>Vendor</item>
+        <item>Admin</item>
+    </string-array>
+
+
     <string-array name="spinner_items">
         <item>Select Report</item> <!-- This is the hint -->
         <item>Daily Report</item>

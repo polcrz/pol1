@@ -3,6 +3,7 @@ package com.example.myapplication;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +22,7 @@ import com.firebase.ui.database.FirebaseRecyclerOptions;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 import com.orhanobut.dialogplus.DialogPlus;
 import com.orhanobut.dialogplus.ViewHolder;
@@ -132,8 +134,10 @@ public class MainAdapter extends FirebaseRecyclerAdapter<InventoryModel, MainAda
                         map.put("Price", price);
                         map.put("Quantity", quantity);
 
+                        String userUID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
                         // Update Firebase database
-                        FirebaseDatabase.getInstance().getReference().child("Products")
+                        FirebaseDatabase.getInstance().getReference().child("users").child(userUID).child("products")
                                 .child(getRef(position).getKey()).updateChildren(map)
                                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                                     @Override
@@ -156,31 +160,7 @@ public class MainAdapter extends FirebaseRecyclerAdapter<InventoryModel, MainAda
             }
         });
 
-        holder.deleteBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(holder.Product.getContext());
-                builder.setTitle("Are you sure?");
-                builder.setMessage("Deleted data can't be Undo.");
 
-                builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        FirebaseDatabase.getInstance().getReference().child("Products")
-                                .child(getRef(position).getKey()).removeValue();
-
-                    }
-                });
-
-                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Toast.makeText(holder.Product.getContext(), "Cancelled", Toast.LENGTH_SHORT).show();
-                    }
-                });
-                builder.show();
-            }
-        });
     }
 
     @NonNull
@@ -194,7 +174,7 @@ public class MainAdapter extends FirebaseRecyclerAdapter<InventoryModel, MainAda
 
         CircleImageView Img;
         TextView Product, Price, Quantity;
-        Button editBtn, deleteBtn;
+        Button editBtn;
 
 
 
@@ -209,7 +189,6 @@ public class MainAdapter extends FirebaseRecyclerAdapter<InventoryModel, MainAda
             Quantity = itemView.findViewById(R.id.Quantity);
 
             editBtn = (Button) itemView.findViewById(R.id.edit_btn);
-            deleteBtn = (Button) itemView.findViewById(R.id.delete_btn);
 
 
 

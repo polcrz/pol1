@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.HashMap;
@@ -40,7 +41,7 @@ public class AddActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (validateInputs()) { // Only proceed if inputs are valid
-                    insertData();
+                    insertProductAtLast();
                     clearAll();
                 }
             }
@@ -132,25 +133,39 @@ public class AddActivity extends AppCompatActivity {
         return isValid;
     }
 
-    private void insertData() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("Product", Product.getText().toString());
-        map.put("Image", Image.getText().toString());
-        map.put("Price", Double.parseDouble(Price.getText().toString()));
-        map.put("Quantity", Integer.parseInt(Quantity.getText().toString()));
+    private void insertProductAtLast() {
+        // Get the current user's UID
+        String userUID = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        FirebaseDatabase.getInstance().getReference().child("Products").push()
-                .setValue(map)
+        if (userUID == null) {
+            Toast.makeText(this, "User not authenticated. Cannot add product.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Create the product data
+        Map<String, Object> product = new HashMap<>();
+        product.put("Product", Product.getText().toString());
+        product.put("Image", Image.getText().toString());
+        product.put("Price", Double.parseDouble(Price.getText().toString()));
+        product.put("Quantity", Integer.parseInt(Quantity.getText().toString()));
+
+        // Reference the 'products' node of the specific user
+        FirebaseDatabase.getInstance()
+                .getReference("users")  // Navigate to the 'users' node
+                .child(userUID)         // Select the specific user by UID
+                .child("products")      // Target the 'products' node
+                .push()                 // Push a new product at the end
+                .setValue(product)      // Set the product data
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void unused) {
-                        Toast.makeText(AddActivity.this, "Data Saved Successfully.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(AddActivity.this, "Product added successfully!", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(AddActivity.this, "Error while Saving Data.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(AddActivity.this, "Failed to add product.", Toast.LENGTH_SHORT).show();
                     }
                 });
     }

@@ -42,28 +42,84 @@
                     android:id="@+id/pImage"
                     android:layout_width="104dp"
                     android:layout_height="90dp"
-                    android:src="@drawable/account"
                     android:layout_centerHorizontal="true"
-                    android:layout_marginTop="10dp" />
+                    android:layout_marginTop="10dp"
+                    android:src="@drawable/account" />
 
                 <TextView
                     android:id="@+id/details"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="20sp"
-                    android:text="User Details"
                     android:layout_below="@id/pImage"
                     android:layout_margin="10dp"
+                    android:text="User Details"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
+                <!-- TextView for Username Label -->
                 <TextView
-                    android:id="@+id/userDetails"
+                    android:id="@+id/usernameLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="20sp"
-                    android:text="User Details"
                     android:layout_below="@id/details"
-                    android:layout_margin="10dp" />
+                    android:layout_margin="10dp"
+                    android:text="Username:"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <!-- Editable Name -->
+                <EditText
+                    android:id="@+id/editName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/usernameLabel"
+                    android:layout_margin="10dp"
+                    android:hint="Enter your name"
+                    android:inputType="textPersonName"
+                    android:textSize="16sp" />
+
+                <!-- TextView for Email Label -->
+                <TextView
+                    android:id="@+id/emailLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/editName"
+                    android:layout_margin="10dp"
+                    android:text="Email:"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <!-- Editable Email -->
+                <EditText
+                    android:id="@+id/editEmail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/emailLabel"
+                    android:layout_margin="10dp"
+                    android:hint="Enter your email"
+                    android:inputType="textEmailAddress"
+                    android:textSize="16sp" />
+
+                <!-- Display User Role (Non-Editable) -->
+                <TextView
+                    android:id="@+id/roleTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/editEmail"
+                    android:layout_margin="10dp"
+                    android:text="Role: "
+                    android:textSize="16sp" />
+
+                <!-- Save Button -->
+                <Button
+                    android:id="@+id/saveButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/roleTextView"
+                    android:layout_centerHorizontal="true"
+                    android:layout_margin="10dp"
+                    android:text="Save Changes" />
+
             </RelativeLayout>
 
         </androidx.cardview.widget.CardView>

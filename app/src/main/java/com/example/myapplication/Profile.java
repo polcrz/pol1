@@ -3,11 +3,12 @@ package com.example.myapplication;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.myapplication.databinding.ActivityProfileBinding;
 import com.google.firebase.auth.FirebaseAuth;
@@ -21,7 +22,10 @@ public class Profile extends BaseActivity {
 
     private ActivityProfileBinding binding;
 
-    private TextView userDetailsTextView;
+    private EditText editName;
+    private EditText editEmail;
+    private TextView roleTextView;
+    private Button saveButton;
     private FirebaseAuth auth;
     private DatabaseReference databaseReference;
 
@@ -30,29 +34,26 @@ public class Profile extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-
         // Initialize binding
         binding = ActivityProfileBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         setupDrawer(binding.getRoot());
 
-        // Ensure ActionBar setup
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Profile");
-        } else {
-            Log.e("Profile", "ActionBar is null!");
-        }
-
-
         // Initialize Firebase services
         auth = FirebaseAuth.getInstance();
         databaseReference = FirebaseDatabase.getInstance().getReference("users");
 
-        // Initialize TextView
-        userDetailsTextView = findViewById(R.id.userDetails);
+        // Initialize views
+        editName = findViewById(R.id.editName);
+        editEmail = findViewById(R.id.editEmail);
+        roleTextView = findViewById(R.id.roleTextView);
+        saveButton = findViewById(R.id.saveButton);
 
         // Fetch and display user data
         fetchUserDetails();
+
+        // Set OnClickListener for Save button
+        saveButton.setOnClickListener(v -> saveUserProfile());
     }
 
     private void fetchUserDetails() {
@@ -68,9 +69,10 @@ public class Profile extends BaseActivity {
                     String email = dataSnapshot.child("email").getValue(String.class);
                     String role = dataSnapshot.child("role").getValue(String.class);
 
-                    // Display the user details in the TextView
-                    String userDetails = "Name: " + name + "\nEmail: " + email + "\nRole: " + role;
-                    userDetailsTextView.setText(userDetails);
+                    // Set the data into EditText and TextView
+                    editName.setText(name);
+                    editEmail.setText(email);
+                    roleTextView.setText("Role: " + role);
                 } else {
                     Toast.makeText(Profile.this, "User data not found", Toast.LENGTH_SHORT).show();
                 }
@@ -83,6 +85,23 @@ public class Profile extends BaseActivity {
         });
     }
 
+    private void saveUserProfile() {
+        String userId = auth.getCurrentUser().getUid();
+        String updatedName = editName.getText().toString();
+        String updatedEmail = editEmail.getText().toString();
+
+        if (updatedName.isEmpty() || updatedEmail.isEmpty()) {
+            Toast.makeText(Profile.this, "Please fill in both name and email", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Update the user's details in Firebase Realtime Database
+        databaseReference.child(userId).child("name").setValue(updatedName);
+        databaseReference.child(userId).child("email").setValue(updatedEmail);
+
+        Toast.makeText(Profile.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+    }
+
     @Override
     public void onBackPressed() {
         super.onBackPressed();
@@ -90,4 +109,3 @@ public class Profile extends BaseActivity {
         finish();
     }
 }
-

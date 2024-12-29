@@ -7,16 +7,12 @@
     android:layout_height="match_parent"
     tools:context=".SalesActivity">
 
-
     <!-- Navigation Drawer -->
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
-
-
-
-
 
         <!-- Toolbar -->
         <androidx.appcompat.widget.Toolbar
@@ -32,46 +28,69 @@
             app:layout_constraintTop_toTopOf="parent" />
 
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/salesRecyclerV"
-            android:layout_width="406dp"
-            android:layout_height="620dp"
-            android:visibility="visible"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent" />
-
         <Button
             android:id="@+id/submitBtn"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Submit Sale"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:text="Submit Order"
+            android:textColor="#FFF"
+            android:textSize="16sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.498"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.922">
+            app:layout_constraintTop_toBottomOf="@+id/salesRecyclerV" />
 
-        </Button>
 
-        <ImageButton
-            android:id="@+id/historyBtn"
-            android:layout_width="69dp"
-            android:layout_height="48dp"
-            android:contentDescription="history"
-            android:src="@drawable/history"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/salesRecyclerV"
+            android:layout_width="353dp"
+            android:layout_height="454dp"
+            android:layout_margin="10dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.953"
+            app:layout_constraintHorizontal_bias="0.491"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.093" />
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout3"
+            app:layout_constraintVertical_bias="0.215" />
+
+        <LinearLayout
+            android:id="@+id/linearLayout3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_marginTop="8dp"
+            android:gravity="end"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/toolbar">
 
 
+            <Button
+                android:id="@+id/orderBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="60dp"
+                android:layout_margin="10dp"
+                android:background="@drawable/square_button_bg"
+                android:text="Orders"
+                android:textSize="16sp">
 
+            </Button>
 
+            <ImageButton
+                android:id="@+id/historyBtn"
+                android:layout_width="78dp"
+                android:layout_height="60dp"
+                android:layout_margin="10dp"
+                android:backgroundTint="@color/cardview_light_background"
+                android:contentDescription="history"
+                android:src="@drawable/history" />
+
+        </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <com.google.android.material.navigation.NavigationView
@@ -81,7 +100,5 @@
         android:layout_gravity="start"
         android:background="@android:color/white"
         app:menu="@menu/drawer_menu" />
-
-
 
 </androidx.drawerlayout.widget.DrawerLayout>

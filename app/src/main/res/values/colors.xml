@@ -8,4 +8,9 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="Grey">#757575</color>
+    <color name="card_pressed_color">#FFCCCC</color> <!-- Light Red -->
+    <color name="card_default_color">#FFFFFF</color> <!-- White -->
+    <color name="red">#FF0000</color> <!-- Standard Red -->
+    <color name="orange">#FF9800</color> <!-- Orange -->
+    <color name="blue">#2196F3</color> <!-- Blue -->
 </resources>

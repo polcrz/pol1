@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <androidx.drawerlayout.widget.DrawerLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -10,10 +9,10 @@
     android:elevation="6dp"
     tools:context=".Model.ReportActivity">
 
+    <!-- Main layout for content -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
         <!-- Toolbar -->
         <androidx.appcompat.widget.Toolbar
@@ -28,98 +27,212 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- Spinner for report selection -->
 
-        <TextView
-            android:id="@+id/textView3"
-            android:layout_width="wrap_content"
+        <!-- Generate button -->
+
+        <!-- ScrollView for all content -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Sales Report"
-            android:textSize="20dp"
-            android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:orientation="horizontal"
+            android:gravity="center"
+            app:layout_constraintBottom_toTopOf="@+id/scrollView4"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.054"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.281">
-
-        </TextView>
+            app:layout_constraintTop_toBottomOf="@+id/toolbar">
 
 
+            <Spinner
+                android:id="@+id/mySpinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:background="@drawable/spinner_border"
+                android:scrollbarSize="20dp"
+                android:textAlignment="center"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.056"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/toolbar"
+                app:layout_constraintVertical_bias="0.038" />
 
+            <TextView
+                android:id="@+id/generate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:background="@drawable/spinner_border"
+                android:clickable="true"
+                android:focusable="true"
+                android:text="Generate Report"
+                android:textAlignment="center"
+                android:textSize="17sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.822"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_bias="0.127" />
 
+        </LinearLayout>
 
-
-        <TextView
-            android:id="@+id/inventory"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="352dp"
-            android:text="Inventory Report"
-            android:textSize="20dp"
-            android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.061"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textView3"
-            app:layout_constraintVertical_bias="1.0">
-
-        </TextView>
-
-
-
-
-        <Spinner
-            android:id="@+id/mySpinner"
-            android:layout_width="130dp"
-            android:layout_height="50dp"
-
-            android:background="@drawable/spinner_border"
-            android:scrollbarSize="20dp"
-            app:layout_constraintBottom_toTopOf="@+id/textView3"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.051"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/toolbar"
-            app:layout_constraintVertical_bias="0.772" />
-
-        <TextView
-            android:id="@+id/generate"
-            android:layout_width="129dp"
-            android:layout_height="25dp"
-            android:text="Generate Report"
-            android:textSize="17sp"
-            android:textAlignment="center"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.51"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:background="@drawable/spinner_border"
-            app:layout_constraintVertical_bias="0.95" />
-
-        <TextView
-            android:id="@+id/inventoryReport"
-            android:layout_width="365dp"
-            android:layout_height="240dp"
-            android:layout_margin="20dp"
-            android:text="Inventory Report"
-            android:textSize="20sp"
-            android:layout_marginLeft="25dp"
-            android:layout_marginRight="25dp"
+        <ScrollView
+            android:id="@+id/scrollView4"
+            android:layout_width="match_parent"
+            android:layout_height="602dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/inventory"
-            app:layout_constraintVertical_bias="0.0">
+            app:layout_constraintTop_toBottomOf="@+id/toolbar"
+            app:layout_constraintVertical_bias="1.0">
 
-        </TextView>
+            <!-- Scrollable content inside the ScrollView -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <!-- Report Title (Placed above Sales Report) -->
+                <TextView
+                    android:id="@+id/reportTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="20dp"
+                    android:text="Report"
+                    android:textAlignment="center"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/user"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="Username: "
+                    android:textSize="22sp"
+                    android:textStyle="bold">
+
+                </TextView>
+
+                <!-- Title for Sales Report Section -->
+                <TextView
+                    android:id="@+id/salesReportTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:text="Sales Report"
+                    android:textAlignment="center"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <!-- Sales Report Data in CardView -->
+
+                <!-- Title for Inventory Report Section -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="4dp">
+
+                    <TextView
+                        android:id="@+id/salesReport"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="10dp"
+                        android:padding="10dp"
+                        android:text="Sales Report Data will appear here"
+                        android:textSize="18sp" />
+                </androidx.cardview.widget.CardView>
+
+                <TextView
+                    android:id="@+id/salesSummary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:text="Sales Orders Summary"
+                    android:textAlignment="center"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <!-- Sales Report Data in CardView -->
+
+                <!-- Title for Inventory Report Section -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="4dp">
+
+                    <TextView
+                        android:id="@+id/salesSum"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="10dp"
+                        android:padding="10dp"
+                        android:text="Sales Summary Data will appear here"
+                        android:textSize="18sp" />
+                </androidx.cardview.widget.CardView>
+
+                <TextView
+                    android:id="@+id/inventoryReportTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="10dp"
+                    android:text="Inventory Report"
+                    android:textAlignment="center"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <!-- Inventory Report Data in CardView -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="4dp">
+
+                    <TextView
+                        android:id="@+id/inventoryReport"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="10dp"
+                        android:padding="10dp"
+                        android:text="Inventory Report Data will appear here"
+                        android:textSize="18sp" />
+                </androidx.cardview.widget.CardView>
+
+                <TextView
+                    android:id="@+id/saveAsPdf"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Save as PDF"
+                    android:textSize="18sp"
+                    android:layout_margin="16dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:background="@drawable/spinner_border"
+                    android:padding="8dp"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </LinearLayout>
+        </ScrollView>
+
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+
+
+    <!-- Navigation Drawer -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigation_view"
         android:layout_width="wrap_content"
@@ -127,8 +240,4 @@
         android:layout_gravity="start"
         android:background="@android:color/white"
         app:menu="@menu/drawer_menu" />
-
-
-
-
 </androidx.drawerlayout.widget.DrawerLayout>
