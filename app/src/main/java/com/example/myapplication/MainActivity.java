@@ -204,8 +204,6 @@ public class MainActivity extends BaseActivity {
                 StringBuilder warningsBuilder = new StringBuilder(); // To hold all warning messages
                 inventoryBuilder.append("Today's Inventory:\n");
 
-                boolean showWarning = false;
-
                 for (DataSnapshot productSnapshot : snapshot.getChildren()) {
                     String productName = productSnapshot.child("Product").getValue(String.class);
                     Long productQuantity = productSnapshot.child("Quantity").getValue(Long.class);
@@ -216,18 +214,24 @@ public class MainActivity extends BaseActivity {
                                 .append(productQuantity)
                                 .append("\n\n");
 
-                        // Check for Siomai low stock
-                        if ("Siomai".equalsIgnoreCase(productName) && productQuantity <= 100) {
-                            warningsBuilder.append("Warning!\n")
-                                    .append("Siomai stock is low (Quantity: ")
-                                    .append(productQuantity).append(")\n");
+                        // Check for out of stock products
+                        if (productQuantity == 0) {
+                            warningsBuilder.append("Out of Stock!\n")
+                                    .append("Product: ").append(productName).append(" is out of stock.\n");
+                        } else {
+                            // Check for Siomai low stock
+                            if ("Siomai".equalsIgnoreCase(productName) && productQuantity <= 100) {
+                                warningsBuilder.append("Warning!\n")
+                                        .append("Siomai stock is low (Quantity: ")
+                                        .append(productQuantity).append(")\n");
+                            }
 
-                        }
-
-                        // Check for Gulaman low stock
-                        if ("Gulaman".equalsIgnoreCase(productName) && productQuantity <= 50) {
-                            warningsBuilder.append("Gulaman stock is low (Quantity: ")
-                                    .append(productQuantity).append(")\n");
+                            // Check for Gulaman low stock
+                            if ("Gulaman".equalsIgnoreCase(productName) && productQuantity <= 50) {
+                                warningsBuilder.append("Warning!\n")
+                                        .append("Gulaman stock is low (Quantity: ")
+                                        .append(productQuantity).append(")\n");
+                            }
                         }
                     }
                 }
