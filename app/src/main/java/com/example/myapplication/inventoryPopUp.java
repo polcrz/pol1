@@ -2,13 +2,13 @@ package com.example.myapplication;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -16,17 +16,16 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bumptech.glide.Glide;
 import com.example.myapplication.R;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.google.android.material.textfield.TextInputEditText;
-
-import com.bumptech.glide.Glide;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,23 +45,12 @@ public class inventoryPopUp extends AppCompatActivity {
         addProductBtn = findViewById(R.id.addProductBtn);
         inventoryLayout = findViewById(R.id.inventoryLayout);
 
-        back.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
+        back.setOnClickListener(v -> finish());
 
-        addProductBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showAddProductDialog();
-            }
-        });
+        addProductBtn.setOnClickListener(v -> showAddProductDialog());
 
         usersRef = FirebaseDatabase.getInstance().getReference().child("users");
 
-        // Call fetchVendorsInventory here
         fetchVendorsInventory();
     }
 
@@ -128,27 +116,22 @@ public class inventoryPopUp extends AppCompatActivity {
                                             productName, quantity, price, productSales.getOrDefault(productName, 0)));
 
                                     ImageView productImageView = productCard.findViewById(R.id.productImageView);
-
                                     if (image != null && !image.isEmpty()) {
                                         // Load image using Glide
                                         Glide.with(inventoryPopUp.this).load(image).into(productImageView);
                                     }
 
                                     Button editButton = productCard.findViewById(R.id.editProductBtn);
-                                    editButton.setOnClickListener(new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            handleEditButtonClick(userSnapshot.getKey(), productId, productName, quantity, price, image); // Pass vendorId and productId
-                                        }
-                                    });
+                                    editButton.setOnClickListener(v -> handleEditButtonClick(userSnapshot.getKey(), productId, productName, quantity, price, image)); // Pass vendorId and productId
 
                                     Button deleteButton = productCard.findViewById(R.id.deleteProductBtn);
-                                    deleteButton.setOnClickListener(new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            handleDeleteButtonClick(userSnapshot.getKey(), productId); // Pass vendorId and productId
-                                        }
-                                    });
+                                    deleteButton.setOnClickListener(v -> handleDeleteButtonClick(userSnapshot.getKey(), productId)); // Pass vendorId and productId
+
+                                    // Check for low stock and update UI
+                                    if (quantity < 10) {
+                                        productCard.setBackgroundResource(R.drawable.border_red); // Set the red border
+                                        showLowStockDialog(productName);
+                                    }
 
                                     inventoryLayout.addView(productCard);
                                 }
@@ -308,6 +291,14 @@ public class inventoryPopUp extends AppCompatActivity {
                     }
                 })
                 .setNegativeButton(android.R.string.no, null)
+                .show();
+    }
+
+    private void showLowStockDialog(String productName) {
+        new AlertDialog.Builder(this)
+                .setTitle("Low Stock Warning")
+                .setMessage("Low stock for product: " + productName)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> dialog.dismiss())
                 .show();
     }
 }

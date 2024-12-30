@@ -1,6 +1,7 @@
 package com.example.myapplication;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -8,6 +9,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 
@@ -29,7 +31,9 @@ public class adminSuperAdmin extends AppCompatActivity {
     private TextView salesTextView; // TextView to display total sales
     private TextView inventoryText; // For total inventory display
     private TextView accountsText, reports; // For displaying the total number of accounts
-
+    private DatabaseReference usersRef;
+    private ValueEventListener salesListener, inventoryListener, accountsListener;
+    private CardView cardViewInventory;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,81 +41,63 @@ public class adminSuperAdmin extends AppCompatActivity {
         setContentView(R.layout.activity_admin_super_admin);
 
         mAuth = FirebaseAuth.getInstance();
+        usersRef = FirebaseDatabase.getInstance().getReference("users");
 
         Button logoutButton = findViewById(R.id.logout);
-        logoutButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Sign out the user
-                mAuth.signOut();
-
-                // Show logout Toast message
-                Toast.makeText(adminSuperAdmin.this, "Logged out successfully", Toast.LENGTH_SHORT).show();
-
-                // Clear the activity stack and go to LoginActivity
-                Intent intent = new Intent(adminSuperAdmin.this, LoginActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Clears the current activity stack
-                startActivity(intent);
-
-                // Finish the current activity
-                finish();
+        logoutButton.setOnClickListener(v -> {
+            // Remove listeners
+            if (salesListener != null) {
+                usersRef.removeEventListener(salesListener);
             }
+            if (inventoryListener != null) {
+                usersRef.removeEventListener(inventoryListener);
+            }
+            if (accountsListener != null) {
+                usersRef.removeEventListener(accountsListener);
+            }
+
+            // Sign out the user
+            mAuth.signOut();
+
+            // Show logout Toast message
+            Toast.makeText(adminSuperAdmin.this, "Logged out successfully", Toast.LENGTH_SHORT).show();
+
+            // Clear the activity stack and go to LoginActivity
+            Intent intent = new Intent(adminSuperAdmin.this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Clears the current activity stack
+            startActivity(intent);
+
+            // Finish the current activity
+            finish();
         });
-
-
 
         CardView cardViewReports = findViewById(R.id.reportsCardView);
         reports = findViewById(R.id.reports);
-        cardViewReports.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(adminSuperAdmin.this, AdminsuperReports.class));
-            }
-        });
-
-
+        cardViewReports.setOnClickListener(v -> startActivity(new Intent(adminSuperAdmin.this, AdminsuperReports.class)));
 
         // Initialize CardView and its TextView for sales
         CardView cardViewSales = findViewById(R.id.salesCardView);
         salesTextView = findViewById(R.id.salesText);
 
-        // Initialize the inventory TextView
+        // Initialize the inventory TextView and CardView
         inventoryText = findViewById(R.id.inventoryText);
-        CardView cardViewInventory = findViewById(R.id.inventoryCardView);
+        cardViewInventory = findViewById(R.id.inventoryCardView);
 
         // Initialize the accounts TextView
         accountsText = findViewById(R.id.accountsText); // Ensure this ID matches the TextView in your XML
         CardView cardViewAccounts = findViewById(R.id.accountsCardView);
 
         CardView cardViewProfile = findViewById(R.id.myProfile);
-        cardViewProfile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(adminSuperAdmin.this, adminMyProfile.class));
-            }
-        });
+        cardViewProfile.setOnClickListener(v -> startActivity(new Intent(adminSuperAdmin.this, adminMyProfile.class)));
 
-        cardViewAccounts.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(adminSuperAdmin.this, Accounts.class));
-            }
-        });
+        cardViewAccounts.setOnClickListener(v -> startActivity(new Intent(adminSuperAdmin.this, Accounts.class)));
 
-        cardViewInventory.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(adminSuperAdmin.this, inventoryPopUp.class));
-            }
-        });
+        cardViewInventory.setOnClickListener(v -> startActivity(new Intent(adminSuperAdmin.this, inventoryPopUp.class)));
 
         // Set a click listener on the CardView
-        cardViewSales.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Handle click event, e.g., navigate to another activity
-                startActivity(new Intent(adminSuperAdmin.this, salesPopUp.class));
-            }
+        cardViewSales.setOnClickListener(v -> {
+            // Handle click event, e.g., navigate to another activity
+            startActivity(new Intent(adminSuperAdmin.this, salesPopUp.class));
         });
 
         // Fetch and display today's total sales
@@ -126,9 +112,7 @@ public class adminSuperAdmin extends AppCompatActivity {
 
     // Fetch today's total sales from all vendors
     private void fetchTodaysTotalSales() {
-        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
-
-        usersRef.addValueEventListener(new ValueEventListener() {
+        salesListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 double totalSales = 0;
@@ -176,14 +160,14 @@ public class adminSuperAdmin extends AppCompatActivity {
                 Log.e("adminSuperAdmin", "Database error: " + databaseError.getMessage());
                 Toast.makeText(adminSuperAdmin.this, "Failed to fetch sales data.", Toast.LENGTH_SHORT).show();
             }
-        });
+        };
+
+        usersRef.addValueEventListener(salesListener);
     }
 
     // Fetch and total the inventory of products from vendor users
     private void fetchAllUsersTotalInventory() {
-        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
-
-        usersRef.addValueEventListener(new ValueEventListener() {
+        inventoryListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 int totalInventory = 0;
@@ -226,10 +210,12 @@ public class adminSuperAdmin extends AppCompatActivity {
                 // Update the inventory TextView with the alert message if there's a low inventory alert
                 if (lowInventoryAlert) {
                     inventoryText.setText(alertBuilder.toString());
-                    inventoryText.setTextColor(getResources().getColor(android.R.color.holo_red_dark)); // Set text color to red
+                    inventoryText.setTextColor(Color.WHITE); // Set text color to white
+                    cardViewInventory.setCardBackgroundColor(Color.RED); // Set the CardView background color to red
                 } else {
                     inventoryText.setText(String.format("Total Inventory: %d pcs", totalInventory));
-                    inventoryText.setTextColor(getResources().getColor(android.R.color.black)); // Set text color to black
+                    inventoryText.setTextColor(Color.BLACK); // Set text color to black
+                    cardViewInventory.setCardBackgroundColor(Color.WHITE); // Reset the CardView background color to default
                 }
             }
 
@@ -238,14 +224,14 @@ public class adminSuperAdmin extends AppCompatActivity {
                 Log.e("adminSuperAdmin", "Database error: " + databaseError.getMessage());
                 Toast.makeText(adminSuperAdmin.this, "Failed to fetch inventory data.", Toast.LENGTH_SHORT).show();
             }
-        });
+        };
+
+        usersRef.addValueEventListener(inventoryListener);
     }
 
     // Fetch and display the total number of accounts
     private void fetchTotalAccounts() {
-        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
-
-        usersRef.addValueEventListener(new ValueEventListener() {
+        accountsListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 int accountCount = 0;
@@ -264,7 +250,9 @@ public class adminSuperAdmin extends AppCompatActivity {
                 Log.e("adminSuperAdmin", "Database error: " + databaseError.getMessage());
                 Toast.makeText(adminSuperAdmin.this, "Failed to fetch account data.", Toast.LENGTH_SHORT).show();
             }
-        });
+        };
+
+        usersRef.addValueEventListener(accountsListener);
     }
 
     @Override

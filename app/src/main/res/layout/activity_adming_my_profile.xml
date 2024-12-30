@@ -2,126 +2,154 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".adminMyProfile">
 
 
-    <!-- CardView -->
+    <!-- Back Button -->
 
-    <Button
-        android:id="@+id/backBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="start"
-        android:layout_marginBottom="52dp"
-        android:text="Back"
-        app:layout_constraintBottom_toTopOf="@+id/cardView3"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.049"
-        app:layout_constraintStart_toStartOf="parent">
 
-    </Button>
-
-    <androidx.cardview.widget.CardView
-        android:id="@+id/cardView3"
+    <!-- Main content layout (this should be a FrameLayout to ensure layering works properly) -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="20dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_height="match_parent">
 
-        <RelativeLayout
+
+        <!-- CardView -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardView3"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="75dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp">
 
-            <ImageView
-                android:id="@+id/pImage"
-                android:layout_width="104dp"
-                android:layout_height="90dp"
-                android:layout_centerHorizontal="true"
-                android:layout_marginTop="10dp"
-                android:src="@drawable/account" />
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="603dp">
 
-            <TextView
-                android:id="@+id/details"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/pImage"
-                android:layout_margin="10dp"
-                android:text="User Details"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                <Button
+                    android:id="@+id/backBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_margin="10dp"
+                    android:text="Back"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.049"
+                    app:layout_constraintStart_toStartOf="parent" />
 
-            <!-- TextView for Username Label -->
-            <TextView
-                android:id="@+id/usernameLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/details"
-                android:layout_margin="10dp"
-                android:text="Username:"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/pImage"
+                    android:layout_width="104dp"
+                    android:layout_height="90dp"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginTop="10dp"
+                    android:src="@drawable/account"
+                    app:civ_border_width="1dp" />
 
-            <!-- Editable Name -->
-            <EditText
-                android:id="@+id/editName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/usernameLabel"
-                android:layout_margin="10dp"
-                android:hint="Enter your name"
-                android:inputType="textPersonName"
-                android:textSize="16sp" />
+                <Button
+                    android:id="@+id/uploadImageButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/pImage"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginTop="10dp"
+                    android:text="Upload Image" />
 
-            <!-- TextView for Email Label -->
-            <TextView
-                android:id="@+id/emailLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/editName"
-                android:layout_margin="10dp"
-                android:text="Email:"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/details"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/uploadImageButton"
+                    android:layout_margin="10dp"
+                    android:text="User Details"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
 
-            <!-- Editable Email -->
-            <EditText
-                android:id="@+id/editEmail"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/emailLabel"
-                android:layout_margin="10dp"
-                android:hint="Enter your email"
-                android:inputType="textEmailAddress"
-                android:textSize="16sp" />
+                <!-- TextInputLayout for Name -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/usernameLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/details"
+                    android:layout_margin="10dp">
 
-            <!-- Display User Role (Non-Editable) -->
-            <TextView
-                android:id="@+id/roleTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/editEmail"
-                android:layout_margin="10dp"
-                android:text="Role: "
-                android:textSize="16sp" />
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Enter your name"
+                        android:inputType="textPersonName" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Save Button -->
-            <Button
-                android:id="@+id/saveButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/roleTextView"
-                android:layout_centerHorizontal="true"
-                android:layout_margin="10dp"
-                android:text="Save Changes" />
+                <!-- TextInputLayout for Email -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/emailLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/usernameLayout"
+                    android:layout_margin="10dp">
 
-        </RelativeLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Enter your email"
+                        android:inputType="textEmailAddress" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-    </androidx.cardview.widget.CardView>
+                <!-- TextInputLayout for Password -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/passwordLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/emailLayout"
+                    android:layout_margin="10dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Edit your password"
+                        android:inputType="textPassword" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Checkbox to Toggle Password Visibility -->
+                <CheckBox
+                    android:id="@+id/showPasswordCheckBox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/passwordLayout"
+                    android:layout_marginTop="4dp"
+                    android:text="Show Password" />
+
+                <!-- Display User Role (Non-Editable) -->
+                <TextView
+                    android:id="@+id/roleTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/showPasswordCheckBox"
+                    android:layout_margin="10dp"
+                    android:text="Role: "
+                    android:textSize="16sp" />
+
+                <!-- Save Button -->
+                <Button
+                    android:id="@+id/saveButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/roleTextView"
+                    android:layout_centerHorizontal="true"
+                    android:layout_margin="10dp"
+                    android:text="Save Changes" />
+
+            </RelativeLayout>
+
+        </androidx.cardview.widget.CardView>
+
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
