@@ -85,7 +85,7 @@ public class inventoryPopUp extends AppCompatActivity {
 
                         if (productsSnapshot.exists()) {
                             TextView vendorTextView = new TextView(inventoryPopUp.this);
-                            vendorTextView.setText(String.format("\nVendor: %s ", vendorName));
+                            vendorTextView.setText(String.format("\n   Vendor: %s ", vendorName));
                             vendorTextView.setTextSize(24); // Increase text size
                             vendorTextView.setPadding(16, 16, 16, 16); // Add padding to the bottom
                             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(

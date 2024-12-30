@@ -187,25 +187,50 @@ public class adminSuperAdmin extends AppCompatActivity {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 int totalInventory = 0;
+                boolean lowInventoryAlert = false;
+                StringBuilder alertBuilder = new StringBuilder("Alert! Low inventory:\n");
 
                 // Loop through all users
                 for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
                     // Check if the user has a 'vendor' role
                     String role = userSnapshot.child("role").getValue(String.class);
-                    if ("vendor".equals(role)) {
+                    if ("vendor".equalsIgnoreCase(role)) {
+                        String vendorName = userSnapshot.child("name").getValue(String.class);
+                        boolean vendorLowInventory = false;
+                        StringBuilder vendorAlertBuilder = new StringBuilder();
+
                         // Loop through the products for this vendor user
                         DataSnapshot productsSnapshot = userSnapshot.child("products");
                         for (DataSnapshot productSnapshot : productsSnapshot.getChildren()) {
                             Integer productQuantity = productSnapshot.child("Quantity").getValue(Integer.class);
-                            if (productQuantity != null) {
+                            String productName = productSnapshot.child("Product").getValue(String.class);
+
+                            if (productQuantity != null && productName != null) {
                                 totalInventory += productQuantity;
+
+                                // Check for low inventory
+                                if (productQuantity < 100) {
+                                    vendorLowInventory = true;
+                                    lowInventoryAlert = true;
+                                    vendorAlertBuilder.append(productName).append(": ").append(productQuantity).append(" pcs\n");
+                                }
                             }
+                        }
+
+                        if (vendorLowInventory) {
+                            alertBuilder.append(vendorName).append(":\n").append(vendorAlertBuilder.toString());
                         }
                     }
                 }
 
-                // Update the inventory TextView with the total inventory value
-                inventoryText.setText(String.format("Total Inventory: %d pcs", totalInventory));
+                // Update the inventory TextView with the alert message if there's a low inventory alert
+                if (lowInventoryAlert) {
+                    inventoryText.setText(alertBuilder.toString());
+                    inventoryText.setTextColor(getResources().getColor(android.R.color.holo_red_dark)); // Set text color to red
+                } else {
+                    inventoryText.setText(String.format("Total Inventory: %d pcs", totalInventory));
+                    inventoryText.setTextColor(getResources().getColor(android.R.color.black)); // Set text color to black
+                }
             }
 
             @Override

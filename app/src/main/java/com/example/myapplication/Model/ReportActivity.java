@@ -304,6 +304,129 @@ public class ReportActivity extends BaseActivity {
 
 
     // Fetch sales details based on the selected report type
+    private void fetchVendorSalesData(String reportType) {
+        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
+
+        usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                StringBuilder salesReport = new StringBuilder();
+                double totalSales = 0.0;
+                double totalDiscountAmount = 0.0;
+                int totalDiscountOrderCount = 0;
+
+                long currentTimeMillis = System.currentTimeMillis();
+                long startTime = getStartTimeForRange(reportType, currentTimeMillis);
+                long endTime = getEndTimeForRange(reportType, startTime);
+
+                SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+                String startDateString = dateFormat.format(new Date(startTime));
+                String endDateString = dateFormat.format(new Date(endTime));
+                String currentDateString = dateFormat.format(new Date(currentTimeMillis));
+
+                salesReport.append("Report Start Date: ").append(startDateString).append("\n");
+                if (!reportType.equals("Daily Report")) {
+                    salesReport.append("Report End Date: ").append(endDateString).append("\n");
+                }
+                salesReport.append("Report Generated On: ").append(currentDateString).append("\n\n");
+
+                for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
+                    String role = userSnapshot.child("role").getValue(String.class);
+                    if ("vendor".equalsIgnoreCase(role)) {
+                        String vendorName = userSnapshot.child("name").getValue(String.class);
+                        salesReport.append("Vendor: ").append(vendorName != null ? vendorName : "Unknown").append("\n");
+
+                        DataSnapshot ordersSnapshot = userSnapshot.child("orders");
+                        double vendorTotalSales = 0.0;
+                        double vendorDiscountAmount = 0.0;
+                        int vendorDiscountOrderCount = 0;
+                        Map<String, Integer> productSales = new HashMap<>();
+
+                        for (DataSnapshot orderSnapshot : ordersSnapshot.getChildren()) {
+                            String orderStatus = orderSnapshot.child("Status").getValue(String.class);
+                            String orderDateStr = orderSnapshot.child("Date").getValue(String.class);
+
+                            if ("completed".equalsIgnoreCase(orderStatus) && orderDateStr != null) {
+                                try {
+                                    SimpleDateFormat orderDateFormat = new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.getDefault());
+                                    Date orderDate = orderDateFormat.parse(orderDateStr);
+
+                                    if (orderDate != null && orderDate.getTime() >= startTime && orderDate.getTime() <= endTime) {
+                                        Double finalPrice = orderSnapshot.child("Invoice").child("finalPrice").getValue(Double.class);
+                                        Double discount = orderSnapshot.child("Invoice").child("discount").getValue(Double.class);
+
+                                        if (finalPrice != null) {
+                                            vendorTotalSales += finalPrice;
+                                        }
+                                        if (discount != null && discount > 0) {
+                                            vendorDiscountAmount += discount;
+                                            vendorDiscountOrderCount++;
+                                        }
+
+                                        for (DataSnapshot productSnapshot : orderSnapshot.child("Products").getChildren()) {
+                                            String productName = productSnapshot.child("Product").getValue(String.class);
+                                            Integer quantitySold = productSnapshot.child("Quantity").getValue(Integer.class);
+
+                                            if (productName != null && quantitySold != null) {
+                                                int currentQuantity = productSales.getOrDefault(productName, 0);
+                                                productSales.put(productName, currentQuantity + quantitySold);
+                                            }
+                                        }
+                                    }
+                                } catch (ParseException e) {
+                                    Log.e("ReportActivity", "Error parsing order date: " + e.getMessage(), e);
+                                }
+                            }
+                        }
+
+                        salesReport.append("  Total Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorTotalSales)).append("\n");
+
+                        if (!productSales.isEmpty()) {
+                            salesReport.append("  Products Sold:\n");
+                            for (Map.Entry<String, Integer> productEntry : productSales.entrySet()) {
+                                salesReport.append("    - ").append(productEntry.getKey())
+                                        .append(": ").append(productEntry.getValue()).append(" pcs\n");
+                            }
+                        }
+
+                        salesReport.append("  Discount Information:\n")
+                                .append("    Number of Orders with Discount: ").append(vendorDiscountOrderCount).append("\n")
+                                .append("    Total Discount Amount: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorDiscountAmount)).append("\n\n");
+
+                        totalSales += vendorTotalSales;
+                        totalDiscountAmount += vendorDiscountAmount;
+                        totalDiscountOrderCount += vendorDiscountOrderCount;
+                    }
+                }
+
+                salesReport.append("Total Discount Information:\n")
+                        .append("  Number of Orders with Discount: ").append(totalDiscountOrderCount).append("\n")
+                        .append("  Total Discount Amount: ₱").append(String.format(Locale.getDefault(), "%.2f", totalDiscountAmount)).append("\n\n");
+                salesReport.append("Total Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", totalSales)).append("\n");
+
+                // Display the sales report
+                textViewSalesReport.setText(salesReport.toString());
+
+                // Generate detailed breakdowns for other report types
+                if (reportType.equals("Daily Report")) {
+                    generateDailyBreakdown(salesReport, dataSnapshot, startTime, endTime);
+                } else if (reportType.equals("Weekly Report")) {
+                    generateWeeklyBreakdown(salesReport, dataSnapshot, startTime, endTime);
+                } else if (reportType.equals("Monthly Report")) {
+                    generateMonthlyBreakdown(salesReport, dataSnapshot, startTime, endTime);
+                } else if (reportType.equals("Yearly Report")) {
+                    generateYearlyBreakdown(salesReport, dataSnapshot, startTime, endTime);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e("ReportActivity", "Database error: " + databaseError.getMessage());
+                Toast.makeText(ReportActivity.this, "Failed to fetch sales data.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void fetchSalesDetails(String reportType) {
         long currentTimeMillis = System.currentTimeMillis();
         long startTime = getStartTimeForRange(reportType, currentTimeMillis);
@@ -330,7 +453,6 @@ public class ReportActivity extends BaseActivity {
                 });
     }
 
-    // Process each sale to extract the required details
     private void processSaleForDetails(DataSnapshot sale, long startTime, long endTime, String reportType, StringBuilder salesData) {
         String date = sale.child("Date").getValue(String.class);
         if (date == null) {
@@ -339,7 +461,7 @@ public class ReportActivity extends BaseActivity {
         }
 
         try {
-            SimpleDateFormat firebaseDateFormat = new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.US);  // Ensure the correct locale
+            SimpleDateFormat firebaseDateFormat = new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.US);
             Date saleDateParsed = firebaseDateFormat.parse(date);
             if (saleDateParsed == null || saleDateParsed.getTime() < startTime || saleDateParsed.getTime() > endTime) {
                 Log.w("ReportActivity", "Sale date is out of range or could not be parsed for sale: " + sale.getKey());
@@ -381,6 +503,209 @@ public class ReportActivity extends BaseActivity {
             Log.e("ReportActivity", "Error processing sale for details: " + sale.getKey(), e);
         }
     }
+
+    private void generateDailyBreakdown(StringBuilder salesReport, DataSnapshot dataSnapshot, long startTime, long endTime) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(startTime);
+        SimpleDateFormat dayFormat = new SimpleDateFormat("EEE MMM dd, yyyy", Locale.getDefault());
+
+        while (calendar.getTimeInMillis() <= endTime) {
+            long dayStartTime = calendar.getTimeInMillis();
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+            long dayEndTime = calendar.getTimeInMillis() - 1;
+
+            salesReport.append("\nDaily Breakdown (").append(dayFormat.format(new Date(dayStartTime))).append("):\n");
+
+            for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
+                String role = userSnapshot.child("role").getValue(String.class);
+                if ("vendor".equalsIgnoreCase(role)) {
+                    String vendorName = userSnapshot.child("name").getValue(String.class);
+                    salesReport.append("Vendor: ").append(vendorName != null ? vendorName : "Unknown").append("\n");
+
+                    DataSnapshot ordersSnapshot = userSnapshot.child("orders");
+                    double vendorDailySales = 0.0;
+
+                    for (DataSnapshot orderSnapshot : ordersSnapshot.getChildren()) {
+                        String orderStatus = orderSnapshot.child("Status").getValue(String.class);
+                        String orderDateStr = orderSnapshot.child("Date").getValue(String.class);
+
+                        if ("completed".equalsIgnoreCase(orderStatus) && orderDateStr != null) {
+                            try {
+                                SimpleDateFormat orderDateFormat = new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.getDefault());
+                                Date orderDate = orderDateFormat.parse(orderDateStr);
+
+                                if (orderDate != null && orderDate.getTime() >= dayStartTime && orderDate.getTime() <= dayEndTime) {
+                                    Double finalPrice = orderSnapshot.child("Invoice").child("finalPrice").getValue(Double.class);
+
+                                    if (finalPrice != null) {
+                                        vendorDailySales += finalPrice;
+                                    }
+                                }
+                            } catch (ParseException e) {
+                                Log.e("ReportActivity", "Error parsing order date: " + e.getMessage(), e);
+                            }
+                        }
+                    }
+
+                    salesReport.append("  Daily Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorDailySales)).append("\n");
+                }
+            }
+        }
+    }
+    private void generateMonthlyBreakdown(StringBuilder salesReport, DataSnapshot dataSnapshot, long startTime, long endTime) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(startTime);
+        SimpleDateFormat monthFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
+
+        while (calendar.getTimeInMillis() <= endTime) {
+            long monthStartTime = calendar.getTimeInMillis();
+            calendar.add(Calendar.MONTH, 1);
+            long monthEndTime = calendar.getTimeInMillis() - 1;
+
+            salesReport.append("\nMonthly Breakdown (").append(monthFormat.format(new Date(monthStartTime))).append("):\n");
+
+            for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
+                String role = userSnapshot.child("role").getValue(String.class);
+                if ("vendor".equalsIgnoreCase(role)) {
+                    String vendorName = userSnapshot.child("name").getValue(String.class);
+                    salesReport.append("Vendor: ").append(vendorName != null ? vendorName : "Unknown").append("\n");
+
+                    DataSnapshot ordersSnapshot = userSnapshot.child("orders");
+                    double vendorMonthlySales = 0.0;
+
+                    for (DataSnapshot orderSnapshot : ordersSnapshot.getChildren()) {
+                        String orderStatus = orderSnapshot.child("Status").getValue(String.class);
+                        String orderDateStr = orderSnapshot.child("Date").getValue(String.class);
+
+                        if ("completed".equalsIgnoreCase(orderStatus) && orderDateStr != null) {
+                            try {
+                                SimpleDateFormat orderDateFormat = new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.getDefault());
+                                Date orderDate = orderDateFormat.parse(orderDateStr);
+
+                                if (orderDate != null && orderDate.getTime() >= monthStartTime && orderDate.getTime() <= monthEndTime) {
+                                    Double finalPrice = orderSnapshot.child("Invoice").child("finalPrice").getValue(Double.class);
+
+                                    if (finalPrice != null) {
+                                        vendorMonthlySales += finalPrice;
+                                    }
+                                }
+                            } catch (ParseException e) {
+                                Log.e("ReportActivity", "Error parsing order date: " + e.getMessage(), e);
+                            }
+                        }
+                    }
+
+                    salesReport.append("  Monthly Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorMonthlySales)).append("\n");
+                }
+            }
+        }
+    }
+    private void generateWeeklyBreakdown(StringBuilder salesReport, DataSnapshot dataSnapshot, long startTime, long endTime) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(startTime);
+        SimpleDateFormat weekFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+        SimpleDateFormat dayFormat = new SimpleDateFormat("EEE MMM dd, yyyy", Locale.getDefault());
+
+        while (calendar.getTimeInMillis() <= endTime) {
+            long weekStartTime = calendar.getTimeInMillis();
+            calendar.add(Calendar.WEEK_OF_YEAR, 1);
+            long weekEndTime = calendar.getTimeInMillis() - 1;
+
+            salesReport.append("\nWeekly Breakdown (").append(weekFormat.format(new Date(weekStartTime)))
+                    .append(" - ").append(weekFormat.format(new Date(weekEndTime))).append("):\n");
+
+            for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
+                String role = userSnapshot.child("role").getValue(String.class);
+                if ("vendor".equalsIgnoreCase(role)) {
+                    String vendorName = userSnapshot.child("name").getValue(String.class);
+                    salesReport.append("Vendor: ").append(vendorName != null ? vendorName : "Unknown").append("\n");
+
+                    DataSnapshot ordersSnapshot = userSnapshot.child("orders");
+                    Map<String, Double> dailySales = new HashMap<>();
+
+                    for (DataSnapshot orderSnapshot : ordersSnapshot.getChildren()) {
+                        String orderStatus = orderSnapshot.child("Status").getValue(String.class);
+                        String orderDateStr = orderSnapshot.child("Date").getValue(String.class);
+
+                        if ("completed".equalsIgnoreCase(orderStatus) && orderDateStr != null) {
+                            try {
+                                SimpleDateFormat orderDateFormat = new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.getDefault());
+                                Date orderDate = orderDateFormat.parse(orderDateStr);
+
+                                if (orderDate != null && orderDate.getTime() >= weekStartTime && orderDate.getTime() <= weekEndTime) {
+                                    Double finalPrice = orderSnapshot.child("Invoice").child("finalPrice").getValue(Double.class);
+
+                                    if (finalPrice != null) {
+                                        String dayOfWeek = dayFormat.format(orderDate);
+                                        dailySales.put(dayOfWeek, dailySales.getOrDefault(dayOfWeek, 0.0) + finalPrice);
+                                    }
+                                }
+                            } catch (ParseException e) {
+                                Log.e("ReportActivity", "Error parsing order date: " + e.getMessage(), e);
+                            }
+                        }
+                    }
+
+                    for (Map.Entry<String, Double> entry : dailySales.entrySet()) {
+                        salesReport.append("  ").append(entry.getKey()).append(": ₱")
+                                .append(String.format(Locale.getDefault(), "%.2f", entry.getValue())).append("\n");
+                    }
+                }
+            }
+        }
+    }
+
+    private void generateYearlyBreakdown(StringBuilder salesReport, DataSnapshot dataSnapshot, long startTime, long endTime) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(startTime);
+        SimpleDateFormat monthFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
+
+        while (calendar.getTimeInMillis() <= endTime) {
+            long monthStartTime = calendar.getTimeInMillis();
+            calendar.add(Calendar.MONTH, 1);
+            long monthEndTime = calendar.getTimeInMillis() - 1;
+
+            salesReport.append("\nMonthly Breakdown (").append(monthFormat.format(new Date(monthStartTime))).append("):\n");
+
+            for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
+                String role = userSnapshot.child("role").getValue(String.class);
+                if ("vendor".equalsIgnoreCase(role)) {
+                    String vendorName = userSnapshot.child("name").getValue(String.class);
+                    salesReport.append("Vendor: ").append(vendorName != null ? vendorName : "Unknown").append("\n");
+
+                    DataSnapshot ordersSnapshot = userSnapshot.child("orders");
+                    double vendorMonthlySales = 0.0;
+
+                    for (DataSnapshot orderSnapshot : ordersSnapshot.getChildren()) {
+                        String orderStatus = orderSnapshot.child("Status").getValue(String.class);
+                        String orderDateStr = orderSnapshot.child("Date").getValue(String.class);
+
+                        if ("completed".equalsIgnoreCase(orderStatus) && orderDateStr != null) {
+                            try {
+                                SimpleDateFormat orderDateFormat = new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.getDefault());
+                                Date orderDate = orderDateFormat.parse(orderDateStr);
+
+                                if (orderDate != null && orderDate.getTime() >= monthStartTime && orderDate.getTime() <= monthEndTime) {
+                                    Double finalPrice = orderSnapshot.child("Invoice").child("finalPrice").getValue(Double.class);
+
+                                    if (finalPrice != null) {
+                                        vendorMonthlySales += finalPrice;
+                                    }
+                                }
+                            } catch (ParseException e) {
+                                Log.e("ReportActivity", "Error parsing order date: " + e.getMessage(), e);
+                            }
+                        }
+                    }
+
+                    salesReport.append("  Monthly Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorMonthlySales)).append("\n");
+                }
+            }
+        }
+    }
+
+    // Process each sale to extract the required details
+
 
     // Display the sales details in the TextView
     private void displaySalesDetails(StringBuilder salesData, String reportType) {
