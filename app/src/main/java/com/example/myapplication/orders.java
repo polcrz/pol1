@@ -44,6 +44,8 @@ public class orders extends BaseActivity {
     private CheckBox cbPwd;
     private CheckBox cbSenior;
 
+    private TextView tvDiscount;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,6 +76,7 @@ public class orders extends BaseActivity {
         btnOrderComplete = findViewById(R.id.btnCompleteOrder);
         etCashPayment = findViewById(R.id.etCashPayment);
         btnCancelOrder = findViewById(R.id.btnCancelOrder);
+        tvDiscount = findViewById(R.id.tvDiscount);
 
         // Initialize CheckBoxes
         cbPwd = findViewById(R.id.cbPwd);
@@ -126,7 +129,7 @@ public class orders extends BaseActivity {
             }
         });
 
-        // Handle checkbox toggle for Senior discount
+// Handle checkbox toggle for Senior discount
         cbSenior.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 cbPwd.setChecked(false);
@@ -179,6 +182,8 @@ public class orders extends BaseActivity {
     private void resetPrice() {
         if (!cbPwd.isChecked() && !cbSenior.isChecked()) {
             tvOrderPrice.setText("Total Price: ₱" + String.format("%.2f", originalTotalPrice));
+            tvDiscount.setText(""); // Clear the discount TextView
+            tvOrderPrice.setTag(0.0); // Clear the stored discount
         }
     }
 
@@ -326,33 +331,93 @@ public class orders extends BaseActivity {
             return;
         }
 
-        // Apply a 20% discount on the original total price
-        double discount = originalTotalPrice * 0.20;
-        double discountedPrice = originalTotalPrice - discount;
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            String userId = currentUser.getUid();
+            String orderId = tvOrderId.getText().toString().replace("Order ID: #", "").trim();
+            DatabaseReference orderRef = databaseReference.child(userId).child("orders").child(orderId);
 
-        // Update the price displayed in the TextView
-        tvOrderPrice.setText("Total Price: ₱" + String.format("%.2f", discountedPrice));
+            orderRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot orderSnapshot) {
+                    double highestDiscount = calculateHighestDiscount(orderSnapshot);
+                    double discountedPrice = originalTotalPrice - highestDiscount;
+
+                    // Update the price displayed in the TextView
+                    tvOrderPrice.setText("Total Price: ₱" + String.format("%.2f", discountedPrice));
+                    // Display the discount in the discount TextView
+                    tvDiscount.setText(String.format("Discount: ₱%.2f", highestDiscount));
+                    // Store the discount for later use in the invoice
+                    tvOrderPrice.setTag(highestDiscount);
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.e("Firebase", "Failed to fetch order data: " + databaseError.getMessage());
+                }
+            });
+        } else {
+            Toast.makeText(this, "User not authenticated.", Toast.LENGTH_SHORT).show();
+        }
     }
 
-    private double calculateDiscount(DataSnapshot orderSnapshot) {
-        double highestPrice = 0.0;
+    private double calculateHighestDiscount(DataSnapshot orderSnapshot) {
+        double highestDiscount = 0.0;
 
         // Iterate through the products in the order
         for (DataSnapshot productSnapshot : orderSnapshot.child("Products").getChildren()) {
-            Integer unitPrice = productSnapshot.child("Price").getValue(Integer.class); // Get unit price of the product
+            String productName = productSnapshot.child("Product").getValue(String.class);
+            Integer unitPrice = productSnapshot.child("Price").getValue(Integer.class);
+            Integer quantity = productSnapshot.child("Quantity").getValue(Integer.class);
 
-            if (unitPrice != null) {
-                // Find the highest unit price among the products
-                if (unitPrice > highestPrice) {
-                    highestPrice = unitPrice;
+            if (unitPrice != null && productName != null && quantity != null) {
+                double discount = 0.0;
+
+                // Calculate potential discount for siomai
+                if (productName.equalsIgnoreCase("siomai") && quantity >= 4) {
+                    discount = unitPrice * 4 * 0.20;
+                } else {
+                    // Calculate 20% discount for other products
+                    discount = unitPrice * 0.20;
+                }
+
+                // Keep track of the highest discount
+                if (discount > highestDiscount) {
+                    highestDiscount = discount;
+                }
+            }
+        }
+
+        return highestDiscount;
+    }
+
+    private double[] calculateDiscounts(DataSnapshot orderSnapshot) {
+        final double[] highestPrice = {0.0};
+        final double[] siomaiDiscount = {0.0};
+
+        // Iterate through the products in the order
+        for (DataSnapshot productSnapshot : orderSnapshot.child("Products").getChildren()) {
+            String productName = productSnapshot.child("Product").getValue(String.class);
+            Integer unitPrice = productSnapshot.child("Price").getValue(Integer.class);
+            Integer quantity = productSnapshot.child("Quantity").getValue(Integer.class);
+
+            if (unitPrice != null && productName != null && quantity != null) {
+                // Check for highest price product
+                if (unitPrice > highestPrice[0]) {
+                    highestPrice[0] = unitPrice;
+                }
+
+                // Check for special discount on siomai
+                if (productName.equalsIgnoreCase("siomai") && quantity >= 4) {
+                    siomaiDiscount[0] = unitPrice * 4 * 0.20;
                 }
             }
         }
 
         // Apply 20% discount to the highest initial price
-        double discount = highestPrice * 0.20;
+        double highestPriceDiscount = highestPrice[0] * 0.20;
 
-        return discount;
+        return new double[]{highestPriceDiscount, siomaiDiscount[0]};
     }
 
     private void generateAndSaveInvoice(String vendorName, String currentDateAndTime, String userId, boolean isPwdSenior,
@@ -365,23 +430,41 @@ public class orders extends BaseActivity {
         String totalPriceText = tvOrderPrice.getText().toString().replace("Total Price: ₱", "").trim();
 
         // Use a single-element array to hold the total price
-        final double[] totalPrice = {Double.parseDouble(totalPriceText)}; // This includes VAT
+        final double[] totalPrice = {0.0};
+        try {
+            totalPrice[0] = Double.parseDouble(totalPriceText); // This includes VAT and the applied discount
+        } catch (NumberFormatException e) {
+            Log.e("Invoice", "Invalid total price format: " + totalPriceText, e);
+            Toast.makeText(orders.this, "Invalid total price format.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        // Fetch order data from Firebase to calculate discount
+        // Fetch the discount from the tag
+        double discount = tvOrderPrice.getTag() != null ? (double) tvOrderPrice.getTag() : 0.0;
+
+        // Update the discount TextView
+        tvDiscount.setText(String.format("Discount: ₱%.2f", discount));
+
+        // Fetch order data from Firebase
         DatabaseReference orderRef = databaseReference.child(userId).child("orders").child(orderId);
 
         orderRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot orderSnapshot) {
-                double discount = calculateDiscount(orderSnapshot);
-                double finalPrice = totalPrice[0] - discount; // Apply the discount to the total price (with VAT)
+                // Since the discount is already applied in totalPrice, we do not need to apply it again
+                double finalPrice = totalPrice[0];
 
-                double cashPayment = Double.parseDouble(etCashPayment.getText().toString());
+                double cashPayment = 0.0;
+                try {
+                    cashPayment = Double.parseDouble(etCashPayment.getText().toString());
+                } catch (NumberFormatException e) {
+                    Log.e("Invoice", "Invalid cash payment format: " + etCashPayment.getText().toString(), e);
+                    Toast.makeText(orders.this, "Invalid cash payment format.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 double change = cashPayment - finalPrice;
 
                 // Round values to 2 decimal places for precision
-                totalPrice[0] = Math.round(totalPrice[0] * 100.0) / 100.0;
-                discount = Math.round(discount * 100.0) / 100.0;
                 finalPrice = Math.round(finalPrice * 100.0) / 100.0;
                 cashPayment = Math.round(cashPayment * 100.0) / 100.0;
                 change = Math.round(change * 100.0) / 100.0;
@@ -393,7 +476,7 @@ public class orders extends BaseActivity {
 
                 // Create an Invoice object
                 Invoice invoice = new Invoice(invoiceNumber, vendorName, currentDateAndTime, orderId, orderDetails, itemPrices,
-                        vatDetails, totalPrice[0], discount, finalPrice, cashPayment, change, pwdName, pwdId, idIssued, expirationDate, isSenior);
+                        vatDetails, originalTotalPrice, discount, finalPrice, cashPayment, change, pwdName, pwdId, idIssued, expirationDate, isSenior);
 
                 // Save the invoice under the order node in Firebase
                 DatabaseReference ordersRef = FirebaseDatabase.getInstance().getReference("users").child(userId).child("orders").child(orderId);

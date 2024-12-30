@@ -54,26 +54,7 @@
             android:layout_toRightOf="@+id/img1"
             android:layout_marginLeft="10dp"
             android:layout_below="@+id/Price"/>
-        
-        <LinearLayout
-            android:layout_marginTop="10dp"
-            android:layout_below="@+id/Quantity"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
 
-            <Button
-                android:id="@+id/edit_btn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="5dp"
-                android:text="Edit"
-                android:gravity="center"
-                android:textAllCaps="false" />
-
-
-        </LinearLayout>
 
     </RelativeLayout>
 

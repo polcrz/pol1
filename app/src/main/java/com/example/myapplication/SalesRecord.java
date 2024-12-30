@@ -8,7 +8,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.myapplication.databinding.ActivityOrdersBinding;
 import com.example.myapplication.databinding.ActivitySalesRecordBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -43,7 +42,6 @@ public class SalesRecord extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sales_record);
 
-
         // Inflate layout using ViewBinding
         binding = ActivitySalesRecordBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -75,12 +73,13 @@ public class SalesRecord extends BaseActivity {
                 .child(userUID)
                 .child("orders");
 
-        // Query for completed orders
-        Query completedOrdersQuery = ordersRef.orderByChild("Status").equalTo("completed");
+        // Query for completed orders ordered by timestamp in descending order
+        Query completedOrdersQuery = ordersRef.orderByChild("timestamp").limitToLast(100);
 
         completedOrdersQuery.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
+                // Iterate through the data from the last to the first to get the latest orders first
                 for (DataSnapshot orderSnapshot : dataSnapshot.getChildren()) {
                     String orderId = orderSnapshot.getKey();
                     if (orderId != null) {
@@ -115,7 +114,8 @@ public class SalesRecord extends BaseActivity {
             @Override
             public void onDataChange(DataSnapshot orderSnapshot) {
                 String date = orderSnapshot.child("Date").getValue(String.class);
-                double finalPrice = orderSnapshot.child("Invoice").child("finalPrice").getValue(Double.class);
+                Double finalPriceValue = orderSnapshot.child("Invoice").child("finalPrice").getValue(Double.class);
+                double finalPrice = (finalPriceValue != null) ? finalPriceValue : 0.0;
 
                 if (date != null) {
                     String formattedDate = formatDate(date);
@@ -243,8 +243,6 @@ public class SalesRecord extends BaseActivity {
         // Update sales display
         updateSalesDisplay();
     }
-
-
 
     private void updateSalesDisplay() {
         // Update the TextViews with the calculated sales totals

@@ -100,112 +100,25 @@ public class AdminsuperReports extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
         }
     }
+
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     private void saveReportAsPDF() {
-        PdfDocument pdfDocument = new PdfDocument();
-        Paint paint = new Paint();
-        paint.setTextSize(12);
-
-        int pageWidth = 595;
-        int pageHeight = 842;
-        int margin = 50;
-        int maxWidth = pageWidth - 2 * margin;
-        int startY = margin;
-
-        PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 1).create();
-        PdfDocument.Page page = pdfDocument.startPage(pageInfo);
-        Canvas canvas = page.getCanvas();
-
-        int x = margin;
-        int y = startY;
-
-        // Draw Report Title
-        y = drawTextWithPageWrapping(canvas, pdfDocument, "Report Title: " + reportTitle.getText().toString(), x, y, maxWidth, margin, pageHeight, paint, pageWidth);
-
-        // Draw Sales Report
-        y += 40;
-        y = drawTextWithPageWrapping(canvas, pdfDocument, "Sales Report:", x, y, maxWidth, margin, pageHeight, paint, pageWidth);
-
-        y += 20;
-        y = drawMultilineTextWithPageWrapping(canvas, pdfDocument, textViewSalesReport.getText().toString(), x, y, maxWidth, margin, pageHeight, paint, pageWidth);
-
-        // Draw Inventory Report
-        y += 30;
-        y = drawTextWithPageWrapping(canvas, pdfDocument, "Inventory Report:", x, y, maxWidth, margin, pageHeight, paint, pageWidth);
-
-        y += 20;
-        y = drawMultilineTextWithPageWrapping(canvas, pdfDocument, inventoryReport.getText().toString(), x, y, maxWidth, margin, pageHeight, paint, pageWidth);
-
-        // Draw Sales Summary
-        y += 30;
-        y = drawTextWithPageWrapping(canvas, pdfDocument, "Sales Summary:", x, y, maxWidth, margin, pageHeight, paint, pageWidth);
-
-        y += 20;
-        y = drawMultilineTextWithPageWrapping(canvas, pdfDocument, salesSum.getText().toString(), x, y, maxWidth, margin, pageHeight, paint, pageWidth);
-
-        // Finish the last page
-        pdfDocument.finishPage(page);
-
+        // Define the file path
         String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String fileName = "Report_" + timestamp + ".pdf";
-        File pdfFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
+        String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/" + fileName;
 
-        try (FileOutputStream fos = new FileOutputStream(pdfFile)) {
-            pdfDocument.writeTo(fos);
-            Toast.makeText(this, "PDF saved to " + pdfFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
-        } catch (IOException e) {
-            Log.e("ReportActivity", "Error saving PDF", e);
-            Toast.makeText(this, "Failed to save PDF.", Toast.LENGTH_SHORT).show();
-        } finally {
-            pdfDocument.close();
-        }
-    }
+        // Gather report data
+        String reportTitleText = reportTitle.getText().toString();
+        String salesReportText = textViewSalesReport.getText().toString();
+        String inventoryReportText = inventoryReport.getText().toString();
+        String salesSummaryText = salesSum.getText().toString();
 
-    private int drawTextWithPageWrapping(Canvas canvas, PdfDocument pdfDocument, String text, int x, int y, int maxWidth, int margin, int pageHeight, Paint paint, int pageWidth) {
-        String[] words = text.split(" ");
-        StringBuilder line = new StringBuilder();
-        PdfDocument.Page currentPage = null;
+        // Create PDF using PdfCreator
+        PdfCreator pdfCreator = new PdfCreator();
+        pdfCreator.createPdf(filePath, reportTitleText, salesReportText, inventoryReportText, salesSummaryText);
 
-        for (String word : words) {
-            if (paint.measureText(line + word) < maxWidth) {
-                line.append(word).append(" ");
-            } else {
-                // Draw the current line
-                canvas.drawText(line.toString(), x, y, paint);
-                line = new StringBuilder(word + " ");
-                y += (int) Math.ceil(paint.descent() - paint.ascent());
-
-                // Check if the current `y` exceeds the page height
-                if (y > pageHeight - margin) {
-                    // Finish the current page
-                    pdfDocument.finishPage(currentPage);
-
-                    // Start a new page
-                    PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pdfDocument.getPages().size() + 1).create();
-                    currentPage = pdfDocument.startPage(pageInfo);
-                    canvas = currentPage.getCanvas();
-
-                    // Reset `y` to the top margin for the new page
-                    y = margin;
-                }
-            }
-        }
-
-        // Draw the remaining line
-        if (line.length() > 0) {
-            canvas.drawText(line.toString(), x, y, paint);
-            y += (int) Math.ceil(paint.descent() - paint.ascent());
-        }
-
-        return y;
-    }
-
-
-    private int drawMultilineTextWithPageWrapping(Canvas canvas, PdfDocument pdfDocument, String text, int x, int y, int maxWidth, int margin, int pageHeight, Paint paint, int pageWidth) {
-        for (String line : text.split("\n")) {
-            y = drawTextWithPageWrapping(canvas, pdfDocument, line, x, y, maxWidth, margin, pageHeight, paint, pageWidth);
-        }
-        return y;
+        Toast.makeText(this, "PDF created at " + filePath, Toast.LENGTH_SHORT).show();
     }
 
 
@@ -219,6 +132,8 @@ public class AdminsuperReports extends AppCompatActivity {
             public void onDataChange(DataSnapshot dataSnapshot) {
                 StringBuilder salesReport = new StringBuilder();
                 double totalSales = 0.0; // Track total sales across all vendors
+                double totalDiscountAmount = 0.0;   // Track total discount amount
+                int totalDiscountOrderCount = 0;    // Track number of orders with discounts
 
                 // Define the start and end times for the report based on the selected report type
                 long currentTimeMillis = System.currentTimeMillis();
@@ -244,6 +159,9 @@ public class AdminsuperReports extends AppCompatActivity {
 
                         DataSnapshot ordersSnapshot = userSnapshot.child("orders");
                         double vendorTotalSales = 0.0; // Track total sales for this vendor
+                        double vendorDiscountAmount = 0.0;   // Track total discount amount for this vendor
+                        int vendorDiscountOrderCount = 0;    // Track number of orders with discounts for this vendor
+                        Map<String, Integer> productSales = new HashMap<>(); // Track product sales
 
                         for (DataSnapshot orderSnapshot : ordersSnapshot.getChildren()) {
                             String orderStatus = orderSnapshot.child("Status").getValue(String.class);
@@ -259,8 +177,25 @@ public class AdminsuperReports extends AppCompatActivity {
                                     if (orderDate != null && orderDate.getTime() >= startTime && orderDate.getTime() <= endTime) {
                                         // Extract the final price
                                         Double finalPrice = orderSnapshot.child("Invoice").child("finalPrice").getValue(Double.class);
+                                        Double discount = orderSnapshot.child("Invoice").child("discount").getValue(Double.class);
+
                                         if (finalPrice != null) {
                                             vendorTotalSales += finalPrice; // Add to vendor's total sales
+                                        }
+                                        if (discount != null && discount > 0) {
+                                            vendorDiscountAmount += discount;
+                                            vendorDiscountOrderCount++;
+                                        }
+
+                                        // Track product sales
+                                        for (DataSnapshot productSnapshot : orderSnapshot.child("Products").getChildren()) {
+                                            String productName = productSnapshot.child("Product").getValue(String.class);
+                                            Integer quantitySold = productSnapshot.child("Quantity").getValue(Integer.class);
+
+                                            if (productName != null && quantitySold != null) {
+                                                int currentQuantity = productSales.getOrDefault(productName, 0);
+                                                productSales.put(productName, currentQuantity + quantitySold);
+                                            }
                                         }
                                     }
                                 } catch (ParseException e) {
@@ -270,14 +205,36 @@ public class AdminsuperReports extends AppCompatActivity {
                         }
 
                         // Append vendor's total sales to the report
-                        salesReport.append("  Total Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorTotalSales)).append("\n\n");
+                        salesReport.append("  Total Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorTotalSales)).append("\n");
+
+                        // Append product sales information
+                        if (!productSales.isEmpty()) {
+                            salesReport.append("  Products Sold:\n");
+                            for (Map.Entry<String, Integer> productEntry : productSales.entrySet()) {
+                                salesReport.append("    - ").append(productEntry.getKey())
+                                        .append(": ").append(productEntry.getValue()).append(" pcs\n");
+                            }
+                        }
+
+                        // Append discount information
+                        salesReport.append("  Discount Information:\n")
+                                .append("    Number of Orders with Discount: ").append(vendorDiscountOrderCount).append("\n")
+                                .append("    Total Discount Amount: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorDiscountAmount)).append("\n\n");
+
                         totalSales += vendorTotalSales; // Add to overall total sales
+                        totalDiscountAmount += vendorDiscountAmount;
+                        totalDiscountOrderCount += vendorDiscountOrderCount;
                     }
                 }
 
+                // Append overall total sales and discount information
+                salesReport.append("Total Discount Information:\n")
+                        .append("  Number of Orders with Discount: ").append(totalDiscountOrderCount).append("\n")
+                        .append("  Total Discount Amount: ₱").append(String.format(Locale.getDefault(), "%.2f", totalDiscountAmount)).append("\n\n");
+                salesReport.append("Total Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", totalSales)).append("\n");
+
                 // Display the sales report
                 textViewSalesReport.setText(salesReport.toString());
-
             }
 
             @Override
@@ -300,6 +257,7 @@ public class AdminsuperReports extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 StringBuilder invoiceReport = new StringBuilder("Invoice Report:\n\n");
+                StringBuilder noSalesVendors = new StringBuilder("Vendors with No Sales:\n\n");
 
                 for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
                     String role = userSnapshot.child("role").getValue(String.class);
@@ -361,9 +319,9 @@ public class AdminsuperReports extends AppCompatActivity {
                                         Double discount = invoiceSnapshot.child("discount").getValue(Double.class);
 
                                         if (pwdId != null && pwdName != null && discount != null) {
-                                            invoiceReport.append("  PWD Discount Applied:\n");
-                                            invoiceReport.append("    PWD ID: ").append(pwdId).append("\n");
-                                            invoiceReport.append("    PWD Name: ").append(pwdName).append("\n");
+                                            invoiceReport.append("  PWD/Senior Discount Applied:\n");
+                                            invoiceReport.append("    PWD/Senior ID Number: ").append(pwdId).append("\n");
+                                            invoiceReport.append("    PWD/Senior Name: ").append(pwdName).append("\n");
                                             invoiceReport.append("    Discount: ₱").append(String.format(Locale.getDefault(), "%.2f", discount)).append("\n");
                                         }
 
@@ -375,12 +333,15 @@ public class AdminsuperReports extends AppCompatActivity {
                             }
                         }
 
-                        // If the vendor has no invoices in the selected range, add a message
+                        // If the vendor has no invoices in the selected range, add their name to the no sales list
                         if (!hasInvoices) {
-                            invoiceReport.append("  No completed orders within the selected date range.\n\n");
+                            noSalesVendors.append(vendorName).append("\n");
                         }
                     }
                 }
+
+                // Append vendors with no sales to the report
+                invoiceReport.append(noSalesVendors).append("\n");
 
                 // Display the invoice report
                 salesSum.setText(invoiceReport.toString());

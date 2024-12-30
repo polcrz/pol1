@@ -60,9 +60,9 @@ public class InvoiceActivity extends AppCompatActivity {
             // Add discount details if applicable
             if (invoice.getDiscount() > 0) {
                 invoiceDetails.append(String.format("Discount: ₱%.2f\n", invoice.getDiscount()));
+                invoiceDetails.append(String.format("Final Price: ₱%.2f\n", invoice.getFinalPrice()));
             }
 
-            invoiceDetails.append(String.format("Final Price: ₱%.2f\n", invoice.getFinalPrice()));
             invoiceDetails.append(String.format("Cash Payment: ₱%.2f\n", invoice.getCashPayment()));
             invoiceDetails.append(String.format("Change: ₱%.2f\n", invoice.getChange()));
 

@@ -20,6 +20,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.example.myapplication.BaseActivity;
+import com.example.myapplication.PdfCreator;
 import com.example.myapplication.R;
 import com.example.myapplication.databinding.ActivityReportBinding;
 import com.google.firebase.auth.FirebaseAuth;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -151,78 +153,28 @@ public class ReportActivity extends BaseActivity {
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     private void saveReportAsPDF() {
-        PdfDocument pdfDocument = new PdfDocument();
-        Paint paint = new Paint();
-        paint.setTextSize(12);
-
-        PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(595, 842, 1).create();
-        PdfDocument.Page page = pdfDocument.startPage(pageInfo);
-        Canvas canvas = page.getCanvas();
-
-        int x = 10;
-        int y = 50;
-        int maxWidth = 570; // Leave margins on both sides
-
-        drawTextWithWrapping(canvas, "Report Title: " + reportTitle.getText().toString(), x, y, maxWidth, paint);
-        y += 40;
-
-        drawTextWithWrapping(canvas, "Sales Report:", x, y, maxWidth, paint);
-        y += 20;
-        y = drawMultilineText(canvas, textViewSalesReport.getText().toString(), x, y, maxWidth, paint);
-
-        y += 30;
-        drawTextWithWrapping(canvas, "Inventory Report:", x, y, maxWidth, paint);
-        y += 20;
-        y = drawMultilineText(canvas, textViewInventoryReport.getText().toString(), x, y, maxWidth, paint);
-
-        y += 30;
-        drawTextWithWrapping(canvas, "Sales Summary:", x, y, maxWidth, paint);
-        y += 20;
-        y = drawMultilineText(canvas, salesSum.getText().toString(), x, y, maxWidth, paint);
-
-        pdfDocument.finishPage(page);
-
-        // Add a timestamp to the filename
+        // Define the file path
         String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String fileName = "Report_" + timestamp + ".pdf";
+        String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/" + fileName;
 
-        // Save the PDF to the Downloads folder
-        File pdfFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
+        // Gather report data
+        String reportTitleText = reportTitle.getText().toString();
+        String salesReportText = textViewSalesReport.getText().toString();
+        String inventoryReportText = textViewInventoryReport.getText().toString();
+        String salesSummaryText = salesSum.getText().toString();
 
-        try (FileOutputStream fos = new FileOutputStream(pdfFile)) {
-            pdfDocument.writeTo(fos);
-            Toast.makeText(this, "PDF saved to " + pdfFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
-        } catch (IOException e) {
-            Log.e("ReportActivity", "Error saving PDF", e);
-            Toast.makeText(this, "Failed to save PDF.", Toast.LENGTH_SHORT).show();
-        } finally {
-            pdfDocument.close();
-        }
+        // Create PDF using PdfCreator
+        PdfCreator pdfCreator = new PdfCreator();
+        pdfCreator.createPdf(filePath, reportTitleText, salesReportText, inventoryReportText, salesSummaryText);
+
+        Toast.makeText(this, "PDF created at " + filePath, Toast.LENGTH_SHORT).show();
     }
 
-    private void drawTextWithWrapping(Canvas canvas, String text, int x, int y, int maxWidth, Paint paint) {
-        String[] words = text.split(" ");
-        StringBuilder line = new StringBuilder();
 
-        for (String word : words) {
-            if (paint.measureText(line + word) < maxWidth) {
-                line.append(word).append(" ");
-            } else {
-                canvas.drawText(line.toString(), x, y, paint);
-                line = new StringBuilder(word + " ");
-                y += paint.descent() - paint.ascent();
-            }
-        }
-        canvas.drawText(line.toString(), x, y, paint);
-    }
 
-    private int drawMultilineText(Canvas canvas, String text, int x, int y, int maxWidth, Paint paint) {
-        for (String line : text.split("\n")) {
-            drawTextWithWrapping(canvas, line, x, y, maxWidth, paint);
-            y += paint.descent() - paint.ascent();
-        }
-        return y;
-    }
+
+
 
     private void fetchReportData(String timeRange) {
         // Fetch inventory data (Product and Quantity) based on the selected time range
@@ -290,16 +242,12 @@ public class ReportActivity extends BaseActivity {
                             InventoryModel inventory = productSnapshot.getValue(InventoryModel.class);
 
                             if (inventory != null) {
-                                data.append("Product: ").append(inventory.getProduct())
-                                        .append("\n");
-
+                                data.append("Product: ").append(inventory.getProduct()).append("\n");
+                                data.append("Price: ").append(inventory.getPrice()).append("\n");
+                                data.append("Quantity in Stock: ").append(inventory.getQuantity()).append(" pc/s").append("\n");
                                 int totalSold = productSales.getOrDefault(inventory.getProduct(), 0);
-                                data.append("Quantity Sold: ").append(totalSold).append("\n");
-
-                                data.append("Quantity in Stock: ").append(inventory.getQuantity())
-                                        .append("\nPrice: ").append(inventory.getPrice())
-                                        .append("\n---------------------------------")
-                                        .append("\n\n");
+                                data.append("Quantity Sold: ").append(totalSold).append(" pc/s").append("\n");
+                                data.append("---------------------------------\n\n");
                             } else {
                                 data.append("Error fetching product data\n\n");
                             }
@@ -399,18 +347,32 @@ public class ReportActivity extends BaseActivity {
             }
 
             // Extract details from the Invoice node
-            String invoiceNumber = sale.child("Invoice").child("orderId").getValue(String.class);
-            String orderDetails = sale.child("Invoice").child("orderDetails").getValue(String.class);
-            Double discount = sale.child("Invoice").child("discount").getValue(Double.class);
-            Double finalPrice = sale.child("Invoice").child("finalPrice").getValue(Double.class);
+            String orderId = sale.child("Invoice").child("orderId").getValue(String.class);
+            String invoiceNumber = sale.child("Invoice").child("invoiceNumber").getValue(String.class);
             String vendorName = sale.child("Invoice").child("vendorName").getValue(String.class);
+            String orderDetails = sale.child("Invoice").child("orderDetails").getValue(String.class);
+            Double totalPrice = sale.child("Invoice").child("totalPrice").getValue(Double.class);
+            Double discount = sale.child("Invoice").child("discount").getValue(Double.class);
+            String pwdName = sale.child("Invoice").child("pwdName").getValue(String.class);
+            String pwdId = sale.child("Invoice").child("pwdId").getValue(String.class);
+            Double finalPrice = sale.child("Invoice").child("finalPrice").getValue(Double.class);
 
             // Add details to summary
-            salesData.append("Order ID: ").append(invoiceNumber != null ? invoiceNumber : "N/A").append("\n");
-            salesData.append("Order Details: ").append(orderDetails != null ? orderDetails : "N/A").append("\n");
-            salesData.append("Discount: ₱").append(discount != null ? String.format(Locale.getDefault(), "%.2f", discount) : "0.00").append("\n");
-            salesData.append("Final Price: ₱").append(finalPrice != null ? String.format(Locale.getDefault(), "%.2f", finalPrice) : "0.00").append("\n");
+            salesData.append("Order ID: ").append(orderId != null ? orderId : "N/A").append("\n");
+            salesData.append("Invoice Number: ").append(invoiceNumber != null ? invoiceNumber : "N/A").append("\n");
+            salesData.append("Date: ").append(date).append("\n");
             salesData.append("Vendor Name: ").append(vendorName != null ? vendorName : "N/A").append("\n");
+            salesData.append("Order Details: ").append(orderDetails != null ? orderDetails : "N/A").append("\n");
+            salesData.append("Total Price: ₱").append(totalPrice != null ? String.format(Locale.getDefault(), "%.2f", totalPrice) : "0.00").append("\n");
+
+            // Check and add discount details if available
+            if (discount != null && discount > 0) {
+                salesData.append("Discount: ₱").append(String.format(Locale.getDefault(), "%.2f", discount)).append("\n");
+                salesData.append("PWD/Senior Name: ").append(pwdName != null ? pwdName : "N/A").append("\n");
+                salesData.append("PWD/Senior ID Number: ").append(pwdId != null ? pwdId : "N/A").append("\n");
+                salesData.append("Final Price: ₱").append(finalPrice != null ? String.format(Locale.getDefault(), "%.2f", finalPrice) : "0.00").append("\n");
+            }
+
             salesData.append("--------------------------------------\n\n");
 
         } catch (ParseException e) {
@@ -437,12 +399,21 @@ public class ReportActivity extends BaseActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 StringBuilder salesReport = new StringBuilder();
-                HashMap<String, ProductSalesData> productSales = new HashMap<>();
                 double totalSalesAmount = 0;    // Track total sales amount
+                int totalDiscountOrderCount = 0;   // Track number of orders with discounts
+                double totalDiscountAmount = 0; // Track total discount amount
 
                 // Initialize a map to hold sales amounts for each period
-                Map<String, Double> periodSales = new HashMap<>();
-                SimpleDateFormat periodFormat;
+                Map<String, Double> periodSales = new LinkedHashMap<>();
+                // Initialize a map to hold product sales data for each period
+                Map<String, Map<String, Integer>> periodProductSales = new LinkedHashMap<>();
+                // Initialize a map to hold discount information for each period
+                Map<String, Integer> periodDiscountOrderCount = new LinkedHashMap<>();
+                Map<String, Double> periodDiscountAmount = new LinkedHashMap<>();
+                // Initialize a map to hold total product sales data
+                Map<String, Integer> totalProductSales = new LinkedHashMap<>();
+                SimpleDateFormat periodFormat; // For formatting periods based on time range
+                String reportTitle = "";
 
                 long currentTimeMillis = System.currentTimeMillis();
                 long startTime = getStartTimeForRange(timeRange, currentTimeMillis);
@@ -450,29 +421,61 @@ public class ReportActivity extends BaseActivity {
 
                 switch (timeRange) {
                     case "Daily Report":
-                        periodFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()); // e.g., "Dec 26, 2024"
+                        periodFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()); // e.g., "Dec 29, 2024"
+                        reportTitle = "Daily Sales Report for " + periodFormat.format(new Date(startTime));
                         break;
                     case "Weekly Report":
-                        periodFormat = new SimpleDateFormat("EEE, MMM dd, yyyy", Locale.getDefault()); // e.g., "Mon, Dec 26, 2024"
+                        periodFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()); // e.g., "Dec 23, 2024 - Dec 29, 2024"
+                        reportTitle = "Weekly Sales Report";
                         break;
                     case "Monthly Report":
-                        periodFormat = new SimpleDateFormat("MMMM", Locale.getDefault()); // e.g., "January"
+                        periodFormat = new SimpleDateFormat("MMM dd", Locale.getDefault()); // e.g., "Dec 01 - Dec 07"
+                        reportTitle = "Monthly Sales Report for December 2024";
                         break;
                     case "Yearly Report":
-                        periodFormat = new SimpleDateFormat("yyyy", Locale.getDefault()); // e.g., "2024"
+                        periodFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault()); // e.g., "December 2024"
+                        reportTitle = "Yearly Sales Report for 2024";
                         break;
                     default:
                         throw new IllegalArgumentException("Invalid report type");
                 }
 
+                if (timeRange.equals("Monthly Report")) {
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.setTimeInMillis(startTime);
+                    int weekNumber = 1;
+
+                    while (calendar.getTimeInMillis() <= endTime) {
+                        Calendar weekStart = (Calendar) calendar.clone();
+                        Calendar weekEnd = (Calendar) calendar.clone();
+                        weekEnd.add(Calendar.DAY_OF_YEAR, 6); // End of the week
+
+                        if (weekEnd.getTimeInMillis() > endTime) {
+                            weekEnd.setTimeInMillis(endTime); // Adjust the end to the last day of the month
+                        }
+
+                        String weekPeriod = "Week " + weekNumber + " (" + periodFormat.format(weekStart.getTime()) + " - " + periodFormat.format(weekEnd.getTime()) + ")";
+                        periodSales.put(weekPeriod, 0.0);
+                        periodProductSales.put(weekPeriod, new HashMap<>());
+                        periodDiscountOrderCount.put(weekPeriod, 0);
+                        periodDiscountAmount.put(weekPeriod, 0.0);
+
+                        // Move to the next week
+                        calendar.add(Calendar.WEEK_OF_YEAR, 1);
+                        weekNumber++;
+                    }
+                }
+
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     String date = snapshot.child("Date").getValue(String.class);
                     Double finalPrice = null;
+                    Double discount = null;
 
                     // Handle Invoice as a HashMap
                     DataSnapshot invoiceSnapshot = snapshot.child("Invoice");
                     if (invoiceSnapshot.exists()) {
                         finalPrice = invoiceSnapshot.child("finalPrice").getValue(Double.class);
+                        discount = invoiceSnapshot.child("discount").getValue(Double.class);
                     }
 
                     if (date == null || finalPrice == null) {
@@ -487,11 +490,56 @@ public class ReportActivity extends BaseActivity {
 
                         if (saleDate != null && saleDate.getTime() >= startTime && saleDate.getTime() <= endTime) {
                             // Get the period for the sale date
-                            String period = periodFormat.format(saleDate);
+                            String period = "";
+                            if (timeRange.equals("Monthly Report")) {
+                                Calendar saleCalendar = Calendar.getInstance();
+                                saleCalendar.setTime(saleDate);
+                                for (String weekPeriod : periodSales.keySet()) {
+                                    if (weekPeriod.contains(periodFormat.format(saleCalendar.getTime()))) {
+                                        period = weekPeriod;
+                                        break;
+                                    }
+                                }
+                            } else {
+                                period = periodFormat.format(saleDate);
+                            }
 
-                            // Update period sales amount
-                            double currentSalesAmount = periodSales.getOrDefault(period, 0.0);
-                            periodSales.put(period, currentSalesAmount + finalPrice);
+                            if (!period.isEmpty()) {
+                                // Update period sales amount
+                                double currentSalesAmount = periodSales.getOrDefault(period, 0.0);
+                                periodSales.put(period, currentSalesAmount + finalPrice);
+
+                                // Update product sales data for the period
+                                if (!periodProductSales.containsKey(period)) {
+                                    periodProductSales.put(period, new HashMap<>());
+                                }
+                                Map<String, Integer> productSales = periodProductSales.get(period);
+                                for (DataSnapshot productSnapshot : snapshot.child("Products").getChildren()) {
+                                    String productName = productSnapshot.child("Product").getValue(String.class);
+                                    Integer quantitySold = productSnapshot.child("Quantity").getValue(Integer.class);
+                                    if (productName != null && quantitySold != null) {
+                                        // Update period product sales
+                                        int currentQuantity = productSales.getOrDefault(productName, 0);
+                                        productSales.put(productName, currentQuantity + quantitySold);
+
+                                        // Update total product sales
+                                        int totalQuantity = totalProductSales.getOrDefault(productName, 0);
+                                        totalProductSales.put(productName, totalQuantity + quantitySold);
+                                    }
+                                }
+
+                                // Update period discount information
+                                if (discount != null && discount > 0) {
+                                    int currentDiscountOrderCount = periodDiscountOrderCount.getOrDefault(period, 0);
+                                    double currentDiscountAmount = periodDiscountAmount.getOrDefault(period, 0.0);
+                                    periodDiscountOrderCount.put(period, currentDiscountOrderCount + 1);
+                                    periodDiscountAmount.put(period, currentDiscountAmount + discount);
+
+                                    // Update total discount information
+                                    totalDiscountOrderCount++;
+                                    totalDiscountAmount += discount;
+                                }
+                            }
 
                             // Update total sales amount
                             totalSalesAmount += finalPrice;
@@ -502,15 +550,43 @@ public class ReportActivity extends BaseActivity {
                 }
 
                 // Generate period sales report and include the exact date before the day of sales
+                salesReport.append(reportTitle).append("\n\n");
                 for (Map.Entry<String, Double> entry : periodSales.entrySet()) {
-                    salesReport.append("Date: ").append(entry.getKey()).append("\n");
+                    salesReport.append("Period: ").append(entry.getKey()).append("\n");
                     salesReport.append("Sales: ₱").append(String.format("%.2f", entry.getValue()))
-                            .append("\n---------------------------------\n\n");
+                            .append("\n\n");
+
+                    // Include product sales data for the period
+                    Map<String, Integer> productSales = periodProductSales.get(entry.getKey());
+                    if (productSales != null && !productSales.isEmpty()) {
+                        salesReport.append("Products Sold:\n\n");
+                        for (Map.Entry<String, Integer> productEntry : productSales.entrySet()) {
+                            salesReport.append("Product: ").append(productEntry.getKey()).append("\nQuantity Sold: ").append(productEntry.getValue()).append(" pc/s").append("\n\n");
+                        }
+                    }
+
+                    // Include discount information for the period
+                    salesReport.append("Discount Information:\n")
+                            .append("Number of Orders with Discount: ").append(periodDiscountOrderCount.get(entry.getKey())).append("\n")
+                            .append("Total Discount Amount: ₱").append(String.format("%.2f", periodDiscountAmount.get(entry.getKey()))).append("\n")
+                            .append("---------------------------------\n\n");
                 }
 
+                // Include total product sales before the overall total sales
+                salesReport.append("Total Products Sold:\n");
+                for (Map.Entry<String, Integer> entry : totalProductSales.entrySet()) {
+                    salesReport.append("Product: ").append(entry.getKey()).append("\nQuantity Sold: ").append(entry.getValue()).append(" pc/s").append("\n\n");
+                }
+                salesReport.append("---------------------------------\n\n");
+
+                // Include the discount information before the total sales
+                salesReport.append("Total Discount Information:\n")
+                        .append("Number of Orders with Discount: ").append(totalDiscountOrderCount).append("\n")
+                        .append("Total Discount Amount: ₱").append(String.format("%.2f", totalDiscountAmount)).append("\n")
+                        .append("---------------------------------\n\n");
+
                 // Include the overall total at the end of the report
-                salesReport.append("\n\n")
-                        .append("Total Sales: ₱").append(String.format("%.2f", totalSalesAmount))
+                salesReport.append("Total Sales: ₱").append(String.format("%.2f", totalSalesAmount))
                         .append("\n---------------------------------");
 
                 // Display the report
@@ -524,6 +600,8 @@ public class ReportActivity extends BaseActivity {
             }
         });
     }
+
+
 
     // Helper method to calculate start time for the selected time range (daily, weekly, etc.)
     private long getStartTimeForRange(String timeRange, long currentTimeMillis) {
