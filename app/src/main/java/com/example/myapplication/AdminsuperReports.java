@@ -169,7 +169,7 @@ public class AdminsuperReports extends AppCompatActivity {
                     String role = userSnapshot.child("role").getValue(String.class);
                     if ("vendor".equalsIgnoreCase(role)) {
                         String vendorName = userSnapshot.child("name").getValue(String.class);
-                        salesReport.append("\nVendor: ").append(vendorName != null ? vendorName : "Unknown").append("\n");
+                        salesReport.append("\n--------------------------------------\nVendor: ").append(vendorName != null ? vendorName : "Unknown").append("\n");
 
                         DataSnapshot ordersSnapshot = userSnapshot.child("orders");
                         double vendorTotalSales = 0.0;
@@ -621,7 +621,7 @@ public class AdminsuperReports extends AppCompatActivity {
                                         String orderId = orderSnapshot.getKey(); // Order ID is the key of the node
 
                                         // Append order details for this invoice
-                                        invoiceReport.append("Vendor: ").append(vendorName).append("\n");
+                                        invoiceReport.append("---------------------------------------------\nVendor: ").append(vendorName).append("\n");
                                         invoiceReport.append("  Invoice Number: ").append(invoiceNumber).append("\n");
                                         invoiceReport.append("  Order ID: ").append(orderId).append("\n");
                                         invoiceReport.append("  Order Date: ").append(orderDateStr).append("\n");

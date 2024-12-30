@@ -20,7 +20,6 @@ public class Accounts extends AppCompatActivity {
     private ActivityAccountsBinding binding;
     private DatabaseReference usersReference;
     private TextView textViewName;
-
     private Button backBTN;
 
     @Override
@@ -36,7 +35,6 @@ public class Accounts extends AppCompatActivity {
         usersReference = database.getReference().child("users"); // Reference to the users node
 
         usersReference.keepSynced(true);  // Keep the data synced across devices
-
 
         // Initialize TextView
         textViewName = findViewById(R.id.textViewName);
@@ -80,16 +78,14 @@ public class Accounts extends AppCompatActivity {
                     String email = userSnapshot.child("email").getValue(String.class);
                     String role = userSnapshot.child("role").getValue(String.class);
 
+                    data.append("Name: ").append(name).append("\n");
+                    data.append("Email: ").append(email).append("\n");
+                    data.append("Role: ").append(role).append("\n");
+                    data.append("----------------------------------------------------\n");
 
-                        data.append("Name: ").append(name).append("\n");
-                        data.append("Email: ").append(email).append("\n");
-                        data.append("Role: ").append(role).append("\n");
-                        data.append("----------------------------------------------------\n");
+                    Log.d("Accounts", "User count: " + userCount);  // Log user count
 
-                        Log.d("Accounts", "User count: " + userCount);  // Log user count
-
-                        data.append("\n");
-
+                    data.append("\n");
                 }
 
                 // Add a log to check total number of users fetched
@@ -98,7 +94,6 @@ public class Accounts extends AppCompatActivity {
                 textViewName.setText(data.toString());
             }
 
-
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 Log.e("Accounts", "Error fetching data: " + databaseError.getMessage());
@@ -106,8 +101,6 @@ public class Accounts extends AppCompatActivity {
             }
         });
     }
-
-
 
     @Override
     public void onBackPressed() {
