@@ -45,31 +45,32 @@ public class adminSuperAdmin extends AppCompatActivity {
 
         Button logoutButton = findViewById(R.id.logout);
         logoutButton.setOnClickListener(v -> {
-            // Remove listeners
+            // Remove listeners if they exist
             if (salesListener != null) {
-                usersRef.removeEventListener(salesListener);
+                usersRef.removeEventListener(salesListener);  // Remove sales listener
             }
             if (inventoryListener != null) {
-                usersRef.removeEventListener(inventoryListener);
+                usersRef.removeEventListener(inventoryListener);  // Remove inventory listener
             }
             if (accountsListener != null) {
-                usersRef.removeEventListener(accountsListener);
+                usersRef.removeEventListener(accountsListener);  // Remove accounts listener
             }
 
             // Sign out the user
             mAuth.signOut();
 
-            // Show logout Toast message
-            Toast.makeText(adminSuperAdmin.this, "Logged out successfully", Toast.LENGTH_SHORT).show();
+            // Show "Account Logged Out" message
+            Toast.makeText(adminSuperAdmin.this, "Account Logged Out", Toast.LENGTH_SHORT).show();
 
             // Clear the activity stack and go to LoginActivity
             Intent intent = new Intent(adminSuperAdmin.this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Clears the current activity stack
             startActivity(intent);
 
-            // Finish the current activity
+            // Finish the current activity to prevent navigating back to it
             finish();
         });
+
 
         CardView cardViewReports = findViewById(R.id.reportsCardView);
         reports = findViewById(R.id.reports);

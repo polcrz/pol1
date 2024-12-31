@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Action Type Filter -->
+    <Spinner
+        android:id="@+id/actionTypeSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <!-- Date Range Filter -->
+    <Button
+        android:id="@+id/selectDateRangeButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select Date Range" />
+
+    <!-- Search by User -->
+    <SearchView
+        android:id="@+id/userSearchView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:queryHint="Search by User" />
+
+    <!-- RecyclerView to display logs -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/logsRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+</LinearLayout>

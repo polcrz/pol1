@@ -141,7 +141,7 @@ public class salesPopUp extends AppCompatActivity {
 
                             // Append vendor data to the report
                             salesReport.append(String.format("Name: %s\n", vendorName));
-                            salesReport.append(String.format("Daily Sales: ₱%.2f\n", dailySales));
+                            salesReport.append(String.format("Today's Sales: ₱%.2f\n", dailySales));
                             salesReport.append("\n");
                             salesReport.append(String.format("Weekly Sales: ₱%.2f\n", weeklySales));
                             salesReport.append(String.format("Week: %s\n", weekRange)); // Added week range

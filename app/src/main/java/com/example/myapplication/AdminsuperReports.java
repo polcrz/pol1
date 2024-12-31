@@ -37,6 +37,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -299,19 +301,19 @@ public class AdminsuperReports extends AppCompatActivity {
                             }
                         }
 
-                        salesReport.append("  Total Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorTotalSales)).append("\n");
+                        salesReport.append("Total Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorTotalSales)).append("\n");
 
                         if (!overallProductSales.isEmpty()) {
-                            salesReport.append("  Products Sold:\n");
+                            salesReport.append("Products\n");
                             for (Map.Entry<String, Integer> productEntry : overallProductSales.entrySet()) {
                                 salesReport.append("    - ").append(productEntry.getKey())
                                         .append(": ").append(productEntry.getValue()).append(" pcs\n");
                             }
                         }
 
-                        salesReport.append("  Discount Information:\n")
-                                .append("    Number of Orders with Discount: ").append(vendorDiscountOrderCount).append("\n")
-                                .append("    Total Discount Amount: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorDiscountAmount)).append("\n\n");
+                        salesReport.append("Discount Information:\n")
+                                .append("Number of Orders with Discount: ").append(vendorDiscountOrderCount).append("\n")
+                                .append("Total Discount Amount: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorDiscountAmount)).append("\n\n");
 
                         totalSales += vendorTotalSales;
                         totalDiscountAmount += vendorDiscountAmount;
@@ -324,24 +326,24 @@ public class AdminsuperReports extends AppCompatActivity {
 
                             Map<String, Integer> periodProductSalesMap = periodProductSales.get(entry.getKey());
                             if (periodProductSalesMap != null && !periodProductSalesMap.isEmpty()) {
-                                salesReport.append("Products Sold:\n");
+                                salesReport.append("Products\n");
                                 for (Map.Entry<String, Integer> productEntry : periodProductSalesMap.entrySet()) {
-                                    salesReport.append("  Product: ").append(productEntry.getKey()).append("\n");
-                                    salesReport.append("  Quantity Sold: ").append(productEntry.getValue()).append(" pcs\n");
+                                    salesReport.append("Product: ").append(productEntry.getKey()).append("\n");
+                                    salesReport.append("Quantity Sold: ").append(productEntry.getValue()).append(" pcs\n");
                                 }
                             }
 
                             salesReport.append("Discount Information:\n");
-                            salesReport.append("  Number of Orders with Discount: ").append(periodDiscountOrderCount.get(entry.getKey())).append("\n");
-                            salesReport.append("  Total Discount Amount: ₱").append(String.format("%.2f", periodDiscountAmount.get(entry.getKey()))).append("\n");
+                            salesReport.append("Number of Orders with Discount: ").append(periodDiscountOrderCount.get(entry.getKey())).append("\n");
+                            salesReport.append("Total Discount Amount: ₱").append(String.format("%.2f", periodDiscountAmount.get(entry.getKey()))).append("\n");
                             salesReport.append("---------------------------------\n\n");
                         }
                     }
                 }
 
                 salesReport.append("Total Discount Information:\n")
-                        .append("  Number of Orders with Discount: ").append(totalDiscountOrderCount).append("\n")
-                        .append("  Total Discount Amount: ₱").append(String.format(Locale.getDefault(), "%.2f", totalDiscountAmount)).append("\n\n");
+                        .append("Number of Orders with Discount: ").append(totalDiscountOrderCount).append("\n")
+                        .append("Total Discount Amount: ₱").append(String.format(Locale.getDefault(), "%.2f", totalDiscountAmount)).append("\n\n");
                 salesReport.append("Total Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", totalSales)).append("\n");
 
                 textViewSalesReport.setText(salesReport.toString());
@@ -594,7 +596,7 @@ public class AdminsuperReports extends AppCompatActivity {
 
                         // Traverse orders for this vendor
                         DataSnapshot ordersSnapshot = userSnapshot.child("orders");
-                        boolean hasInvoices = false; // Track if this vendor has any valid invoices
+                        List<DataSnapshot> validOrders = new ArrayList<>(); // List to hold valid orders
 
                         for (DataSnapshot orderSnapshot : ordersSnapshot.getChildren()) {
                             String orderStatus = orderSnapshot.child("Status").getValue(String.class);
@@ -608,49 +610,8 @@ public class AdminsuperReports extends AppCompatActivity {
 
                                     // Check if the order date is within the selected time range
                                     if (orderDate != null && orderDate.getTime() >= startTime && orderDate.getTime() <= endTime) {
-                                        hasInvoices = true; // Mark that this vendor has invoices in this range
-                                        // Get invoice details
-                                        String invoiceNumber = orderSnapshot.child("Invoice").child("invoiceNumber").getValue(String.class);
-                                        if (invoiceNumber == null) {
-                                            invoiceNumber = "N/A";
-                                        }
-                                        Double finalPrice = orderSnapshot.child("Invoice").child("finalPrice").getValue(Double.class);
-                                        if (finalPrice == null) {
-                                            finalPrice = 0.0;
-                                        }
-                                        String orderId = orderSnapshot.getKey(); // Order ID is the key of the node
-
-                                        // Append order details for this invoice
-                                        invoiceReport.append("---------------------------------------------\nVendor: ").append(vendorName).append("\n");
-                                        invoiceReport.append("  Invoice Number: ").append(invoiceNumber).append("\n");
-                                        invoiceReport.append("  Order ID: ").append(orderId).append("\n");
-                                        invoiceReport.append("  Order Date: ").append(orderDateStr).append("\n");
-                                        invoiceReport.append("  Total Price: ₱").append(String.format(Locale.getDefault(), "%.2f", finalPrice)).append("\n");
-                                        invoiceReport.append("  Products:\n");
-
-                                        for (DataSnapshot productSnapshot : orderSnapshot.child("Products").getChildren()) {
-                                            String productName = productSnapshot.child("Product").getValue(String.class);
-                                            Integer quantity = productSnapshot.child("Quantity").getValue(Integer.class);
-                                            if (productName != null && quantity != null) {
-                                                invoiceReport.append("    - ").append(productName)
-                                                        .append(": ").append(quantity).append(" pcs\n");
-                                            }
-                                        }
-
-                                        // Check if there is a discount (for PWD orders)
-                                        DataSnapshot invoiceSnapshot = orderSnapshot.child("Invoice");
-                                        String pwdId = invoiceSnapshot.child("pwdId").getValue(String.class);
-                                        String pwdName = invoiceSnapshot.child("pwdName").getValue(String.class);
-                                        Double discount = invoiceSnapshot.child("discount").getValue(Double.class);
-
-                                        if (pwdId != null && pwdName != null && discount != null) {
-                                            invoiceReport.append("  PWD/Senior Discount Applied:\n");
-                                            invoiceReport.append("    PWD/Senior ID Number: ").append(pwdId).append("\n");
-                                            invoiceReport.append("    PWD/Senior Name: ").append(pwdName).append("\n");
-                                            invoiceReport.append("    Discount: ₱").append(String.format(Locale.getDefault(), "%.2f", discount)).append("\n");
-                                        }
-
-                                        invoiceReport.append("\n");
+                                        // Add the valid order to the list
+                                        validOrders.add(orderSnapshot);
                                     }
                                 } catch (ParseException e) {
                                     Log.e("AdminsuperReports", "Error parsing order date: " + e.getMessage(), e);
@@ -658,8 +619,76 @@ public class AdminsuperReports extends AppCompatActivity {
                             }
                         }
 
-                        // If the vendor has no invoices in the selected range, add their name to the no sales list
-                        if (!hasInvoices) {
+                        // Sort the orders list by order date in descending order
+                        Collections.sort(validOrders, new Comparator<DataSnapshot>() {
+                            @Override
+                            public int compare(DataSnapshot o1, DataSnapshot o2) {
+                                try {
+                                    String dateStr1 = o1.child("Date").getValue(String.class);
+                                    String dateStr2 = o2.child("Date").getValue(String.class);
+
+                                    SimpleDateFormat orderDateFormat = new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.getDefault());
+                                    Date date1 = orderDateFormat.parse(dateStr1);
+                                    Date date2 = orderDateFormat.parse(dateStr2);
+
+                                    if (date1 != null && date2 != null) {
+                                        return date2.compareTo(date1); // Sort descending (latest first)
+                                    }
+                                } catch (ParseException e) {
+                                    Log.e("AdminsuperReports", "Error comparing order dates: " + e.getMessage(), e);
+                                }
+                                return 0;
+                            }
+                        });
+
+                        // If the vendor has valid orders, generate the invoice report for them
+                        if (!validOrders.isEmpty()) {
+                            for (DataSnapshot orderSnapshot : validOrders) {
+                                String orderDateStr = orderSnapshot.child("Date").getValue(String.class);
+                                String invoiceNumber = orderSnapshot.child("Invoice").child("invoiceNumber").getValue(String.class);
+                                if (invoiceNumber == null) {
+                                    invoiceNumber = "N/A";
+                                }
+                                Double finalPrice = orderSnapshot.child("Invoice").child("finalPrice").getValue(Double.class);
+                                if (finalPrice == null) {
+                                    finalPrice = 0.0;
+                                }
+                                String orderId = orderSnapshot.getKey(); // Order ID is the key of the node
+
+                                // Append order details for this invoice
+                                invoiceReport.append("---------------------------------------------\nVendor: ").append(vendorName).append("\n");
+                                invoiceReport.append("Invoice Number: ").append(invoiceNumber).append("\n");
+                                invoiceReport.append("Order ID: ").append(orderId).append("\n");
+                                invoiceReport.append("Order Date: ").append(orderDateStr).append("\n");
+                                invoiceReport.append("Total Price: ₱").append(String.format(Locale.getDefault(), "%.2f", finalPrice)).append("\n");
+                                invoiceReport.append("Product/s:\n");
+
+                                for (DataSnapshot productSnapshot : orderSnapshot.child("Products").getChildren()) {
+                                    String productName = productSnapshot.child("Product").getValue(String.class);
+                                    Integer quantity = productSnapshot.child("Quantity").getValue(Integer.class);
+                                    if (productName != null && quantity != null) {
+                                        invoiceReport.append("    - ").append(productName)
+                                                .append(": ").append(quantity).append(" pcs\n");
+                                    }
+                                }
+
+                                // Check if there is a discount (for PWD orders)
+                                DataSnapshot invoiceSnapshot = orderSnapshot.child("Invoice");
+                                String pwdId = invoiceSnapshot.child("pwdId").getValue(String.class);
+                                String pwdName = invoiceSnapshot.child("pwdName").getValue(String.class);
+                                Double discount = invoiceSnapshot.child("discount").getValue(Double.class);
+
+                                if (pwdId != null && pwdName != null && discount != null) {
+                                    invoiceReport.append("\nPWD/Senior Discount Applied:\n");
+                                    invoiceReport.append("PWD/Senior ID Number: ").append(pwdId).append("\n");
+                                    invoiceReport.append("PWD/Senior Name: ").append(pwdName).append("\n");
+                                    invoiceReport.append("Discount: ₱").append(String.format(Locale.getDefault(), "%.2f", discount)).append("\n");
+                                }
+
+                                invoiceReport.append("\n");
+                            }
+                        } else {
+                            // If the vendor has no invoices in the selected range, add their name to the no sales list
                             noSalesVendors.append(vendorName).append("\n");
                         }
                     }
@@ -679,6 +708,7 @@ public class AdminsuperReports extends AppCompatActivity {
             }
         });
     }
+
 
     private void generateInventoryReport(String reportType) {
         DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");

@@ -2,7 +2,7 @@ package com.example.myapplication;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.graphics.Color;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -36,6 +36,8 @@ public class inventoryPopUp extends AppCompatActivity {
     private DatabaseReference usersRef;
     private LinearLayout inventoryLayout;
 
+    private TextView logs;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,6 +46,14 @@ public class inventoryPopUp extends AppCompatActivity {
         back = findViewById(R.id.backBtn);
         addProductBtn = findViewById(R.id.addProductBtn);
         inventoryLayout = findViewById(R.id.inventoryLayout);
+        logs = findViewById(R.id.logs);
+
+        logs.setOnClickListener(v -> {
+            Intent intent = new Intent(inventoryPopUp.this, ViewLogsActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish();
+        });
 
         back.setOnClickListener(v -> finish());
 
@@ -128,7 +138,7 @@ public class inventoryPopUp extends AppCompatActivity {
                                     deleteButton.setOnClickListener(v -> handleDeleteButtonClick(userSnapshot.getKey(), productId)); // Pass vendorId and productId
 
                                     // Check for low stock and update UI
-                                    if (quantity < 10) {
+                                    if ((productName.equalsIgnoreCase("Siomai") && quantity < 100) || (!productName.equalsIgnoreCase("Siomai") && quantity < 50)) {
                                         productCard.setBackgroundResource(R.drawable.border_red); // Set the red border
                                         showLowStockDialog(productName);
                                     }
@@ -218,21 +228,40 @@ public class inventoryPopUp extends AppCompatActivity {
         });
     }
 
-    private void showEditProductDialog(String vendorId, String productId, String productName, int quantity, double price, String image) {
+    private void showEditProductDialog(String vendorId, String productId, String productName, int currentQuantity, double price, String image) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Edit Product");
 
-        View viewInflated = LayoutInflater.from(this).inflate(R.layout.dialog_add_product, (ViewGroup) findViewById(android.R.id.content), false);
+        View viewInflated = LayoutInflater.from(this).inflate(R.layout.dialog_edit_product, (ViewGroup) findViewById(android.R.id.content), false);
         final TextInputEditText inputProductName = viewInflated.findViewById(R.id.inputProductName);
-        final TextInputEditText inputQuantity = viewInflated.findViewById(R.id.inputQuantity);
+        final TextInputEditText inputCurrentQuantity = viewInflated.findViewById(R.id.inputCurrentQuantity);
+        final TextInputEditText inputAmount = viewInflated.findViewById(R.id.inputAmount);
         final TextInputEditText inputPrice = viewInflated.findViewById(R.id.inputPrice);
         final TextInputEditText inputImage = viewInflated.findViewById(R.id.inputImage);
+        Button plusButton = viewInflated.findViewById(R.id.plusButton);
+        Button minusButton = viewInflated.findViewById(R.id.minusButton);
 
         // Set current values
         inputProductName.setText(productName);
-        inputQuantity.setText(String.valueOf(quantity));
+        inputCurrentQuantity.setText(String.valueOf(currentQuantity));
         inputPrice.setText(String.valueOf(price));
         inputImage.setText(String.valueOf(image));
+
+        // Handle plus button click
+        plusButton.setOnClickListener(v -> {
+            int amount = Integer.parseInt(inputAmount.getText().toString());
+            int newQuantity = currentQuantity + amount;
+            inputCurrentQuantity.setText(String.valueOf(newQuantity));
+        });
+
+        // Handle minus button click
+        minusButton.setOnClickListener(v -> {
+            int amount = Integer.parseInt(inputAmount.getText().toString());
+            int newQuantity = currentQuantity - amount;
+            if (newQuantity >= 0) {
+                inputCurrentQuantity.setText(String.valueOf(newQuantity));
+            }
+        });
 
         builder.setView(viewInflated);
         builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -240,7 +269,7 @@ public class inventoryPopUp extends AppCompatActivity {
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
                 String newProductName = inputProductName.getText().toString();
-                int newQuantity = Integer.parseInt(inputQuantity.getText().toString());
+                int newQuantity = Integer.parseInt(inputCurrentQuantity.getText().toString());
                 double newPrice = Double.parseDouble(inputPrice.getText().toString());
                 String newImage = inputImage.getText().toString();
                 editProduct(vendorId, productId, newProductName, newQuantity, newPrice, newImage);

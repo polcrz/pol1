@@ -73,7 +73,7 @@
                         android:id="@+id/editName"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Enter your name"
+                        android:hint="Edit your name"
                         android:inputType="textPersonName" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -89,7 +89,7 @@
                         android:id="@+id/editEmail"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Enter your email"
+                        android:hint="Edit your email"
                         android:inputType="textEmailAddress" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -105,7 +105,7 @@
                         android:id="@+id/editPassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Enter your password"
+                        android:hint="Edit your password"
                         android:inputType="textPassword" />
                 </com.google.android.material.textfield.TextInputLayout>
 
