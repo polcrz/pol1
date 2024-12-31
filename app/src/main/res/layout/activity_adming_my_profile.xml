@@ -13,6 +13,7 @@
 
     <!-- Main content layout (this should be a FrameLayout to ensure layering works properly) -->
     <FrameLayout
+        android:id="@+id/frameLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -22,24 +23,14 @@
             android:id="@+id/cardView3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="75dp"
             android:layout_marginLeft="20dp"
+            android:layout_marginTop="75dp"
             android:layout_marginRight="20dp">
 
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="603dp">
 
-                <Button
-                    android:id="@+id/backBtn"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start"
-                    android:layout_margin="10dp"
-                    android:text="Back"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintHorizontal_bias="0.049"
-                    app:layout_constraintStart_toStartOf="parent" />
 
                 <de.hdodenhof.circleimageview.CircleImageView
                     android:id="@+id/pImage"
@@ -149,6 +140,14 @@
             </RelativeLayout>
 
         </androidx.cardview.widget.CardView>
+
+        <Button
+            android:id="@+id/backBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+           android:layout_margin="20dp"
+            android:text="Back" />
 
     </FrameLayout>
 
