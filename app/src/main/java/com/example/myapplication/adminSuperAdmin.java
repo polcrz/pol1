@@ -7,9 +7,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 
@@ -59,9 +57,6 @@ public class adminSuperAdmin extends AppCompatActivity {
             // Sign out the user
             mAuth.signOut();
 
-            // Show "Account Logged Out" message
-            Toast.makeText(adminSuperAdmin.this, "Account Logged Out", Toast.LENGTH_SHORT).show();
-
             // Clear the activity stack and go to LoginActivity
             Intent intent = new Intent(adminSuperAdmin.this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Clears the current activity stack
@@ -70,7 +65,6 @@ public class adminSuperAdmin extends AppCompatActivity {
             // Finish the current activity to prevent navigating back to it
             finish();
         });
-
 
         CardView cardViewReports = findViewById(R.id.reportsCardView);
         reports = findViewById(R.id.reports);
@@ -153,13 +147,13 @@ public class adminSuperAdmin extends AppCompatActivity {
                 }
 
                 // Update the text in the CardView's TextView for total sales
-                salesTextView.setText(String.format("Today's Sales: ₱%.2f", totalSales));
+                salesTextView.setText(String.format("Today's Sales: PHP %.2f", totalSales));
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 Log.e("adminSuperAdmin", "Database error: " + databaseError.getMessage());
-                Toast.makeText(adminSuperAdmin.this, "Failed to fetch sales data.", Toast.LENGTH_SHORT).show();
+                // Removed Toast message here
             }
         };
 
@@ -223,7 +217,7 @@ public class adminSuperAdmin extends AppCompatActivity {
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 Log.e("adminSuperAdmin", "Database error: " + databaseError.getMessage());
-                Toast.makeText(adminSuperAdmin.this, "Failed to fetch inventory data.", Toast.LENGTH_SHORT).show();
+                // Removed Toast message here
             }
         };
 
@@ -249,7 +243,7 @@ public class adminSuperAdmin extends AppCompatActivity {
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 Log.e("adminSuperAdmin", "Database error: " + databaseError.getMessage());
-                Toast.makeText(adminSuperAdmin.this, "Failed to fetch account data.", Toast.LENGTH_SHORT).show();
+                // Removed Toast message here
             }
         };
 

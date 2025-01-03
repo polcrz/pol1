@@ -30,7 +30,7 @@ public class MainAdapter extends FirebaseRecyclerAdapter<InventoryModel, MainAda
         // Inventory Holder
         holder.Product.setText(model.getProduct());
         holder.Quantity.setText(String.format("Quantity: %d", model.getQuantity()));
-        holder.Price.setText(String.format("Price: ₱%.2f", model.getPrice()));
+        holder.Price.setText(String.format("Price: PHP %.2f", model.getPrice()));
 
         Glide.with(holder.Img.getContext())
                 .load(model.getImage())

@@ -36,7 +36,6 @@ public class inventoryPopUp extends AppCompatActivity {
     private DatabaseReference usersRef;
     private LinearLayout inventoryLayout;
 
-    private TextView logs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,14 +45,6 @@ public class inventoryPopUp extends AppCompatActivity {
         back = findViewById(R.id.backBtn);
         addProductBtn = findViewById(R.id.addProductBtn);
         inventoryLayout = findViewById(R.id.inventoryLayout);
-        logs = findViewById(R.id.logs);
-
-        logs.setOnClickListener(v -> {
-            Intent intent = new Intent(inventoryPopUp.this, ViewLogsActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-            finish();
-        });
 
         back.setOnClickListener(v -> finish());
 
@@ -122,7 +113,7 @@ public class inventoryPopUp extends AppCompatActivity {
                                     View productCard = LayoutInflater.from(inventoryPopUp.this).inflate(R.layout.product_card, inventoryLayout, false);
 
                                     TextView productTextView = productCard.findViewById(R.id.productDetails);
-                                    productTextView.setText(String.format("Product: %s\nQuantity: %d\nPrice: ₱%.2f\nTotal Sold: %d pcs",
+                                    productTextView.setText(String.format("Product: %s\nQuantity: %d\nPrice: PHP %.2f\nTotal Sold: %d pcs",
                                             productName, quantity, price, productSales.getOrDefault(productName, 0)));
 
                                     ImageView productImageView = productCard.findViewById(R.id.productImageView);
@@ -138,7 +129,7 @@ public class inventoryPopUp extends AppCompatActivity {
                                     deleteButton.setOnClickListener(v -> handleDeleteButtonClick(userSnapshot.getKey(), productId)); // Pass vendorId and productId
 
                                     // Check for low stock and update UI
-                                    if ((productName.equalsIgnoreCase("Siomai") && quantity < 100) || (!productName.equalsIgnoreCase("Siomai") && quantity < 50)) {
+                                    if ((productName.equalsIgnoreCase("Siomai") && quantity < 100) || (!productName.equalsIgnoreCase("Siomai") && quantity < 100)) {
                                         productCard.setBackgroundResource(R.drawable.border_red); // Set the red border
                                         showLowStockDialog(productName);
                                     }

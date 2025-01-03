@@ -18,8 +18,11 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class SalesRecord extends BaseActivity {
@@ -36,6 +39,8 @@ public class SalesRecord extends BaseActivity {
     private double weeklySales = 0;
     private double monthlySales = 0;
     private double yearlySales = 0;
+
+    private List<String> salesRecords;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +67,9 @@ public class SalesRecord extends BaseActivity {
         monthlySalesTextView = findViewById(R.id.monthlySalesTextView);
         yearlySalesTextView = findViewById(R.id.yearlySalesTextView);
 
+        // Initialize the sales records list
+        salesRecords = new ArrayList<>();
+
         // Fetch and display the invoice details
         fetchCompletedOrders();
     }
@@ -79,6 +87,9 @@ public class SalesRecord extends BaseActivity {
         completedOrdersQuery.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
+                // Clear the current sales records list
+                salesRecords.clear();
+
                 // Iterate through the data from the last to the first to get the latest orders first
                 for (DataSnapshot orderSnapshot : dataSnapshot.getChildren()) {
                     String orderId = orderSnapshot.getKey();
@@ -131,7 +142,9 @@ public class SalesRecord extends BaseActivity {
                         @Override
                         public void onDataChange(DataSnapshot invoiceSnapshot) {
                             if (invoiceSnapshot.exists()) {
-                                displayInvoice(invoiceSnapshot, formattedDate, orderId);
+                                String invoiceDetails = getInvoiceDetails(invoiceSnapshot, formattedDate, orderId);
+                                salesRecords.add(invoiceDetails);
+                                updateSalesHistory();
                             } else {
                                 Log.e("InvoiceDetails", "Invoice not found for orderId: " + orderId);
                             }
@@ -150,6 +163,79 @@ public class SalesRecord extends BaseActivity {
                 Log.e("SalesRecord", "Failed to fetch order details.", databaseError.toException());
             }
         });
+    }
+
+    private String getInvoiceDetails(DataSnapshot invoiceSnapshot, String orderDate, String orderId) {
+        // Retrieve invoice details or set default values if missing
+        String invoiceNumber = invoiceSnapshot.child("invoiceNumber").getValue(String.class);
+        String itemPrices = invoiceSnapshot.child("itemPrices").getValue(String.class);
+        String orderDetails = invoiceSnapshot.child("orderDetails").getValue(String.class);
+        String vatDetails = invoiceSnapshot.child("vatDetails").getValue(String.class);
+        double cashPayment = invoiceSnapshot.child("cashPayment").getValue(Double.class) != null
+                ? invoiceSnapshot.child("cashPayment").getValue(Double.class)
+                : 0.0;
+        double change = invoiceSnapshot.child("change").getValue(Double.class) != null
+                ? invoiceSnapshot.child("change").getValue(Double.class)
+                : 0.0;
+        double finalPrice = invoiceSnapshot.child("finalPrice").getValue(Double.class) != null
+                ? invoiceSnapshot.child("finalPrice").getValue(Double.class)
+                : 0.0;
+        String vendorName = invoiceSnapshot.child("vendorName").getValue(String.class);
+
+        // Retrieve or default PWD/Senior details
+        String pwdName = invoiceSnapshot.child("pwdName").getValue(String.class);
+        String pwdId = invoiceSnapshot.child("pwdId").getValue(String.class);
+        pwdName = (pwdName != null && !pwdName.trim().isEmpty()) ? pwdName : "Not Provided";
+        pwdId = (pwdId != null && !pwdId.trim().isEmpty()) ? pwdId : "Not Provided";
+
+        // Retrieve or default discount
+        Double discount = invoiceSnapshot.child("discount").getValue(Double.class);
+        String discountDetails = (discount != null) ? "Discount: PHP " + String.format("%.2f", discount) : "Discount: PHP 0.00";
+
+        // Build invoice details
+        StringBuilder invoiceDetails = new StringBuilder();
+        invoiceDetails.append("Date and Time: ").append(orderDate).append("\n")
+                .append("Order ID: ").append(orderId).append("\n")
+                .append("Invoice ID: ").append(invoiceNumber != null ? invoiceNumber : "Not Available").append("\n")
+                .append("Vendor: ").append(vendorName != null ? vendorName : "Not Available").append("\n\n")
+                .append("Order Details:\n").append(orderDetails != null ? orderDetails : "No Details").append("\n\n")
+                .append("Items:\n").append(itemPrices != null ? itemPrices : "No Items").append("\n\n")
+                .append("VAT Details:\n").append(vatDetails != null ? vatDetails : "No VAT Details").append("\n\n")
+                .append("Payment Details:\n")
+                .append("Cash Payment: PHP ").append(String.format("%.2f", cashPayment)).append("\n")
+                .append("Change: PHP ").append(String.format("%.2f", change)).append("\n\n")
+                .append("PWD/Senior Details:\n")
+                .append("Name: ").append(pwdName).append("\n")
+                .append("ID: ").append(pwdId).append("\n\n")
+                .append(discountDetails).append("\n")
+                .append("Final Price: PHP ").append(String.format("%.2f", finalPrice)).append("\n")
+                .append("-----------------------------------------------------------\n\n");
+
+        return invoiceDetails.toString();
+    }
+
+    private void updateSalesHistory() {
+        // Clear the current text view content
+        salesHistoryTextView.setText("");
+
+        // Reverse the sales records list to display from latest to oldest
+        Collections.reverse(salesRecords);
+
+        // Append each record to the text view
+        for (String record : salesRecords) {
+            salesHistoryTextView.append(record);
+        }
+
+        // Update sales display
+        updateSalesDisplay();
+    }
+
+    private void updateSalesDisplay() {
+        // Update the TextViews with the calculated sales totals
+        dailySalesTextView.setText("Daily Sales: PHP " + String.format("%.2f", todaySales));
+        weeklySalesTextView.setText("Weekly Sales: PHP " + String.format("%.2f", weeklySales));
+        monthlySalesTextView.setText("Monthly Sales: PHP " + String.format("%.2f", monthlySales));
+        yearlySalesTextView.setText("Yearly Sales: PHP " + String.format("%.2f", yearlySales));
     }
 
     private String formatDate(String date) {
@@ -189,67 +275,6 @@ public class SalesRecord extends BaseActivity {
     private boolean isThisYear(String date) {
         // You can implement this logic based on your need
         return true; // Simplified for this example
-    }
-
-    private void displayInvoice(DataSnapshot invoiceSnapshot, String orderDate, String orderId) {
-        // Retrieve invoice details or set default values if missing
-        String invoiceNumber = invoiceSnapshot.child("invoiceNumber").getValue(String.class);
-        String itemPrices = invoiceSnapshot.child("itemPrices").getValue(String.class);
-        String orderDetails = invoiceSnapshot.child("orderDetails").getValue(String.class);
-        String vatDetails = invoiceSnapshot.child("vatDetails").getValue(String.class);
-        double cashPayment = invoiceSnapshot.child("cashPayment").getValue(Double.class) != null
-                ? invoiceSnapshot.child("cashPayment").getValue(Double.class)
-                : 0.0;
-        double change = invoiceSnapshot.child("change").getValue(Double.class) != null
-                ? invoiceSnapshot.child("change").getValue(Double.class)
-                : 0.0;
-        double finalPrice = invoiceSnapshot.child("finalPrice").getValue(Double.class) != null
-                ? invoiceSnapshot.child("finalPrice").getValue(Double.class)
-                : 0.0;
-        String vendorName = invoiceSnapshot.child("vendorName").getValue(String.class);
-
-        // Retrieve or default PWD/Senior details
-        String pwdName = invoiceSnapshot.child("pwdName").getValue(String.class);
-        String pwdId = invoiceSnapshot.child("pwdId").getValue(String.class);
-        pwdName = (pwdName != null && !pwdName.trim().isEmpty()) ? pwdName : "Not Provided";
-        pwdId = (pwdId != null && !pwdId.trim().isEmpty()) ? pwdId : "Not Provided";
-
-        // Retrieve or default discount
-        Double discount = invoiceSnapshot.child("discount").getValue(Double.class);
-        String discountDetails = (discount != null) ? "Discount: ₱" + String.format("%.2f", discount) : "Discount: ₱0.00";
-
-        // Build invoice details
-        StringBuilder invoiceDetails = new StringBuilder();
-        invoiceDetails.append("Date and Time: ").append(orderDate).append("\n")
-                .append("Order ID: ").append(orderId).append("\n")
-                .append("Invoice ID: ").append(invoiceNumber != null ? invoiceNumber : "Not Available").append("\n")
-                .append("Vendor: ").append(vendorName != null ? vendorName : "Not Available").append("\n\n")
-                .append("Order Details:\n").append(orderDetails != null ? orderDetails : "No Details").append("\n\n")
-                .append("Items:\n").append(itemPrices != null ? itemPrices : "No Items").append("\n\n")
-                .append("VAT Details:\n").append(vatDetails != null ? vatDetails : "No VAT Details").append("\n\n")
-                .append("Payment Details:\n")
-                .append("Cash Payment: ₱").append(String.format("%.2f", cashPayment)).append("\n")
-                .append("Change: ₱").append(String.format("%.2f", change)).append("\n\n")
-                .append("PWD/Senior Details:\n")
-                .append("Name: ").append(pwdName).append("\n")
-                .append("ID: ").append(pwdId).append("\n\n")
-                .append(discountDetails).append("\n")
-                .append("Final Price: ₱").append(String.format("%.2f", finalPrice)).append("\n") // Moved here
-                .append("-----------------------------------------------------------\n\n");
-
-        // Append to the sales history TextView
-        salesHistoryTextView.append(invoiceDetails.toString());
-
-        // Update sales display
-        updateSalesDisplay();
-    }
-
-    private void updateSalesDisplay() {
-        // Update the TextViews with the calculated sales totals
-        dailySalesTextView.setText("Daily Sales: ₱" + String.format("%.2f", todaySales));
-        weeklySalesTextView.setText("Weekly Sales: ₱" + String.format("%.2f", weeklySales));
-        monthlySalesTextView.setText("Monthly Sales: ₱" + String.format("%.2f", monthlySales));
-        yearlySalesTextView.setText("Yearly Sales: ₱" + String.format("%.2f", yearlySales));
     }
 
     @Override

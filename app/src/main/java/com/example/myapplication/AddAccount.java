@@ -107,13 +107,62 @@ public class AddAccount extends AppCompatActivity {
                                 userMap.put("password", password);
                                 userMap.put("role", role);
 
+                                // Save the new user to Firebase
                                 databaseReference.child(id).setValue(userMap).addOnCompleteListener(new OnCompleteListener<Void>() {
                                     @Override
                                     public void onComplete(@NonNull Task<Void> task) {
                                         if (task.isSuccessful()) {
                                             Toast.makeText(AddAccount.this, "Account added successfully!", Toast.LENGTH_SHORT).show();
-                                            startActivity(new Intent(AddAccount.this, Accounts.class));
-                                            finish();
+
+                                            // Sign out the newly created user
+                                            auth.signOut();
+
+                                            // Now fetch the users and check for superadmin role
+                                            databaseReference.get().addOnCompleteListener(new OnCompleteListener<DataSnapshot>() {
+                                                @Override
+                                                public void onComplete(@NonNull Task<DataSnapshot> task) {
+                                                    if (task.isSuccessful() && task.getResult() != null) {
+                                                        DataSnapshot dataSnapshot = task.getResult();
+                                                        boolean superAdminFound = false;
+
+                                                        // Iterate through the users to check for a superadmin
+                                                        for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
+                                                            String role = userSnapshot.child("role").getValue(String.class);
+                                                            if ("superadmin".equalsIgnoreCase(role)) {
+                                                                String superAdminEmail = userSnapshot.child("email").getValue(String.class);
+                                                                String superAdminPassword = userSnapshot.child("password").getValue(String.class);
+
+                                                                // Sign in the superadmin user
+                                                                auth.signInWithEmailAndPassword(superAdminEmail, superAdminPassword)
+                                                                        .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                                                                            @Override
+                                                                            public void onComplete(@NonNull Task<AuthResult> task) {
+                                                                                if (task.isSuccessful()) {
+                                                                                    // If superadmin login is successful, navigate to Accounts activity
+                                                                                    startActivity(new Intent(AddAccount.this, Accounts.class));
+                                                                                    finish();
+                                                                                } else {
+                                                                                    Toast.makeText(AddAccount.this, "Superadmin login failed: " +
+                                                                                            Objects.requireNonNull(task.getException()).getMessage(), Toast.LENGTH_SHORT).show();
+                                                                                }
+                                                                            }
+                                                                        });
+                                                                superAdminFound = true;
+                                                                break; // Stop once superadmin is found
+                                                            }
+                                                        }
+
+                                                        // If no superadmin is found
+                                                        if (!superAdminFound) {
+                                                            Toast.makeText(AddAccount.this, "No superadmin found!", Toast.LENGTH_SHORT).show();
+                                                        }
+                                                    } else {
+                                                        Toast.makeText(AddAccount.this, "Failed to retrieve users: " +
+                                                                Objects.requireNonNull(task.getException()).getMessage(), Toast.LENGTH_SHORT).show();
+                                                    }
+                                                }
+                                            });
+
                                         } else {
                                             Toast.makeText(AddAccount.this, "Failed to save account: " +
                                                     Objects.requireNonNull(task.getException()).getMessage(), Toast.LENGTH_SHORT).show();
@@ -126,6 +175,9 @@ public class AddAccount extends AppCompatActivity {
                             }
                         }
                     });
+
+
+
                 }
             }
         });

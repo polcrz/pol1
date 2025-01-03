@@ -161,11 +161,29 @@ public class AdminsuperReports extends AppCompatActivity {
                 String endDateString = dateFormat.format(new Date(endTime));
                 String currentDateString = dateFormat.format(new Date(currentTimeMillis));
 
-                salesReport.append("Report Start Date: ").append(startDateString).append("\n");
-                if (!reportType.equals("Daily Report")) {
+                if (!reportType.equals("Yearly Report")) {
+                    salesReport.append("Report Start Date: ").append(startDateString).append("\n");
                     salesReport.append("Report End Date: ").append(endDateString).append("\n");
                 }
                 salesReport.append("Report Generated On: ").append(currentDateString).append("\n\n");
+
+                SimpleDateFormat periodFormat;
+                switch (reportType) {
+                    case "Daily Report":
+                        periodFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+                        break;
+                    case "Weekly Report":
+                        periodFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
+                        break;
+                    case "Monthly Report":
+                        periodFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
+                        break;
+                    case "Yearly Report":
+                        periodFormat = new SimpleDateFormat("yyyy", Locale.getDefault());
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Invalid report type");
+                }
 
                 for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
                     String role = userSnapshot.child("role").getValue(String.class);
@@ -183,48 +201,50 @@ public class AdminsuperReports extends AppCompatActivity {
                         Map<String, Integer> periodDiscountOrderCount = new LinkedHashMap<>();
                         Map<String, Double> periodDiscountAmount = new LinkedHashMap<>();
 
-                        SimpleDateFormat periodFormat;
-                        switch (reportType) {
-                            case "Daily Report":
-                                periodFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()); // e.g., "Dec 29, 2024"
-                                break;
-                            case "Weekly Report":
-                                periodFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()); // e.g., "Dec 23, 2024 - Dec 29, 2024"
-                                break;
-                            case "Monthly Report":
-                                periodFormat = new SimpleDateFormat("MMM dd", Locale.getDefault()); // e.g., "Dec 01 - Dec 07"
-                                break;
-                            case "Yearly Report":
-                                periodFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault()); // e.g., "December 2024"
-                                break;
-                            default:
-                                throw new IllegalArgumentException("Invalid report type");
-                        }
+                        Calendar calendar = Calendar.getInstance();
+                        calendar.setTimeInMillis(startTime);
 
-                        if (reportType.equals("Monthly Report")) {
-                            Calendar calendar = Calendar.getInstance();
-                            calendar.setTimeInMillis(startTime);
-                            int weekNumber = 1;
-
-                            while (calendar.getTimeInMillis() <= endTime) {
-                                Calendar weekStart = (Calendar) calendar.clone();
-                                Calendar weekEnd = (Calendar) calendar.clone();
-                                weekEnd.add(Calendar.DAY_OF_YEAR, 6); // End of the week
-
-                                if (weekEnd.getTimeInMillis() > endTime) {
-                                    weekEnd.setTimeInMillis(endTime); // Adjust the end to the last day of the month
-                                }
-
-                                String weekPeriod = "Week " + weekNumber + " (" + periodFormat.format(weekStart.getTime()) + " - " + periodFormat.format(weekEnd.getTime()) + ")";
+                        if (reportType.equals("Daily Report")) {
+                            for (int i = 0; i < 7; i++) {
+                                String dayPeriod = periodFormat.format(calendar.getTime());
+                                periodSales.put(dayPeriod, 0.0);
+                                periodProductSales.put(dayPeriod, new HashMap<>());
+                                periodDiscountOrderCount.put(dayPeriod, 0);
+                                periodDiscountAmount.put(dayPeriod, 0.0);
+                                calendar.add(Calendar.DAY_OF_YEAR, 1);
+                            }
+                        } else if (reportType.equals("Weekly Report")) {
+                            String[] weekPeriods = {
+                                    "Week 1 (Jan 01, 2025 - Jan 07, 2025)",
+                                    "Week 2 (Jan 08, 2025 - Jan 14, 2025)",
+                                    "Week 3 (Jan 15, 2025 - Jan 21, 2025)",
+                                    "Week 4 (Jan 22, 2025 - Jan 28, 2025)",
+                                    "Week 5 (Jan 29, 2025 - Jan 31, 2025)"
+                            };
+                            for (String weekPeriod : weekPeriods) {
                                 periodSales.put(weekPeriod, 0.0);
                                 periodProductSales.put(weekPeriod, new HashMap<>());
                                 periodDiscountOrderCount.put(weekPeriod, 0);
                                 periodDiscountAmount.put(weekPeriod, 0.0);
-
-                                // Move to the next week
-                                calendar.add(Calendar.WEEK_OF_YEAR, 1);
-                                weekNumber++;
                             }
+                        } else if (reportType.equals("Monthly Report")) {
+                            String[] monthPeriods = {
+                                    "January 2025", "February 2025", "March 2025", "April 2025",
+                                    "May 2025", "June 2025", "July 2025", "August 2025",
+                                    "September 2025", "October 2025", "November 2025", "December 2025"
+                            };
+                            for (String monthPeriod : monthPeriods) {
+                                periodSales.put(monthPeriod, 0.0);
+                                periodProductSales.put(monthPeriod, new HashMap<>());
+                                periodDiscountOrderCount.put(monthPeriod, 0);
+                                periodDiscountAmount.put(monthPeriod, 0.0);
+                            }
+                        } else if (reportType.equals("Yearly Report")) {
+                            String yearPeriod = "2025";
+                            periodSales.put(yearPeriod, 0.0);
+                            periodProductSales.put(yearPeriod, new HashMap<>());
+                            periodDiscountOrderCount.put(yearPeriod, 0);
+                            periodDiscountAmount.put(yearPeriod, 0.0);
                         }
 
                         for (DataSnapshot orderSnapshot : ordersSnapshot.getChildren()) {
@@ -248,15 +268,16 @@ public class AdminsuperReports extends AppCompatActivity {
 
                                     if (orderDate != null && orderDate.getTime() >= startTime && orderDate.getTime() <= endTime) {
                                         String period = "";
-                                        if (reportType.equals("Monthly Report")) {
-                                            Calendar saleCalendar = Calendar.getInstance();
-                                            saleCalendar.setTime(orderDate);
-                                            for (String weekPeriod : periodSales.keySet()) {
-                                                if (weekPeriod.contains(periodFormat.format(saleCalendar.getTime()))) {
-                                                    period = weekPeriod;
-                                                    break;
-                                                }
-                                            }
+                                        if (reportType.equals("Weekly Report")) {
+                                            Calendar orderCalendar = Calendar.getInstance();
+                                            orderCalendar.setTime(orderDate);
+
+                                            int weekOfYear = orderCalendar.get(Calendar.WEEK_OF_YEAR);
+                                            if (weekOfYear == 1) period = "Week 1 (Jan 01, 2025 - Jan 07, 2025)";
+                                            else if (weekOfYear == 2) period = "Week 2 (Jan 08, 2025 - Jan 14, 2025)";
+                                            else if (weekOfYear == 3) period = "Week 3 (Jan 15, 2025 - Jan 21, 2025)";
+                                            else if (weekOfYear == 4) period = "Week 4 (Jan 22, 2025 - Jan 28, 2025)";
+                                            else if (weekOfYear == 5) period = "Week 5 (Jan 29, 2025 - Jan 31, 2025)";
                                         } else {
                                             period = periodFormat.format(orderDate);
                                         }
@@ -301,6 +322,7 @@ public class AdminsuperReports extends AppCompatActivity {
                             }
                         }
 
+                        // Append vendor total sales and discounts
                         salesReport.append("Total Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorTotalSales)).append("\n");
 
                         if (!overallProductSales.isEmpty()) {
@@ -319,6 +341,7 @@ public class AdminsuperReports extends AppCompatActivity {
                         totalDiscountAmount += vendorDiscountAmount;
                         totalDiscountOrderCount += vendorDiscountOrderCount;
 
+                        // Append period sales breakdown for the vendor
                         salesReport.append("\nVendor Sales Breakdown:\n");
                         for (Map.Entry<String, Double> entry : periodSales.entrySet()) {
                             salesReport.append("Period: ").append(entry.getKey()).append("\n");
@@ -341,6 +364,7 @@ public class AdminsuperReports extends AppCompatActivity {
                     }
                 }
 
+                // Append total sales and discounts
                 salesReport.append("Total Discount Information:\n")
                         .append("Number of Orders with Discount: ").append(totalDiscountOrderCount).append("\n")
                         .append("Total Discount Amount: ₱").append(String.format(Locale.getDefault(), "%.2f", totalDiscountAmount)).append("\n\n");
@@ -402,7 +426,7 @@ public class AdminsuperReports extends AppCompatActivity {
                         }
                     }
 
-                    salesReport.append("  Daily Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorDailySales)).append("\n");
+                    salesReport.append("  Daily Sales: PHP ").append(String.format(Locale.getDefault(), "%.2f", vendorDailySales)).append("\n");
                 }
             }
         }
@@ -458,7 +482,7 @@ public class AdminsuperReports extends AppCompatActivity {
             }
 
             for (Map.Entry<String, Double> entry : dailySales.entrySet()) {
-                salesReport.append("  ").append(entry.getKey()).append(": ₱")
+                salesReport.append("  ").append(entry.getKey()).append(": PHP ")
                         .append(String.format(Locale.getDefault(), "%.2f", entry.getValue())).append("\n");
             }
         }
@@ -511,7 +535,7 @@ public class AdminsuperReports extends AppCompatActivity {
             }
 
             for (Map.Entry<String, Double> entry : weeklySales.entrySet()) {
-                salesReport.append("  ").append(entry.getKey()).append(" Weekly Sales: ₱")
+                salesReport.append("  ").append(entry.getKey()).append(" Weekly Sales: PHP ")
                         .append(String.format(Locale.getDefault(), "%.2f", entry.getValue())).append("\n");
             }
         }
@@ -566,7 +590,7 @@ public class AdminsuperReports extends AppCompatActivity {
             }
 
             for (Map.Entry<String, Double> entry : monthlySales.entrySet()) {
-                salesReport.append("  ").append(entry.getKey()).append(" Monthly Sales: ₱")
+                salesReport.append("  ").append(entry.getKey()).append(" Monthly Sales: PHP ")
                         .append(String.format(Locale.getDefault(), "%.2f", entry.getValue())).append("\n");
             }
         }
@@ -660,7 +684,7 @@ public class AdminsuperReports extends AppCompatActivity {
                                 invoiceReport.append("Invoice Number: ").append(invoiceNumber).append("\n");
                                 invoiceReport.append("Order ID: ").append(orderId).append("\n");
                                 invoiceReport.append("Order Date: ").append(orderDateStr).append("\n");
-                                invoiceReport.append("Total Price: ₱").append(String.format(Locale.getDefault(), "%.2f", finalPrice)).append("\n");
+                                invoiceReport.append("Total Price: PHP ").append(String.format(Locale.getDefault(), "%.2f", finalPrice)).append("\n");
                                 invoiceReport.append("Product/s:\n");
 
                                 for (DataSnapshot productSnapshot : orderSnapshot.child("Products").getChildren()) {
@@ -682,7 +706,7 @@ public class AdminsuperReports extends AppCompatActivity {
                                     invoiceReport.append("\nPWD/Senior Discount Applied:\n");
                                     invoiceReport.append("PWD/Senior ID Number: ").append(pwdId).append("\n");
                                     invoiceReport.append("PWD/Senior Name: ").append(pwdName).append("\n");
-                                    invoiceReport.append("Discount: ₱").append(String.format(Locale.getDefault(), "%.2f", discount)).append("\n");
+                                    invoiceReport.append("Discount: PHP ").append(String.format(Locale.getDefault(), "%.2f", discount)).append("\n");
                                 }
 
                                 invoiceReport.append("\n");
@@ -824,6 +848,68 @@ public class AdminsuperReports extends AppCompatActivity {
     }
 
 
+   
+// Helper method to calculate start time for the selected time range (daily, weekly, etc.)
+    private long getStartTimeForRange(String timeRange, long currentTimeMillis) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(currentTimeMillis);
+
+        switch (timeRange) {
+            case "Daily Report":
+                // Set start time to January 1, 2025
+                calendar.set(2025, Calendar.JANUARY, 1, 0, 0, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+                break;
+            case "Weekly Report":
+                calendar.set(2025, Calendar.JANUARY, 1, 0, 0, 0);  // Ensure the start date is Jan 1, 2025
+                calendar.set(Calendar.MILLISECOND, 0);
+                break;
+            case "Monthly Report":
+                calendar.set(2025, Calendar.JANUARY, 1, 0, 0, 0);  // Set to the start of January 2025
+                calendar.set(Calendar.MILLISECOND, 0);
+                break;
+            case "Yearly Report":
+                calendar.set(2025, Calendar.JANUARY, 1, 0, 0, 0);  // Set to the start of January 2025
+                calendar.set(Calendar.MILLISECOND, 0);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid report type");
+        }
+        return calendar.getTimeInMillis();
+    }
+
+    // Helper method to calculate end time for the selected time range (daily, weekly, etc.)
+
+    private long getEndTimeForRange(String timeRange, long startTime) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(startTime);
+
+        switch (timeRange) {
+            case "Daily Report":
+                // Set end time to January 7, 2025
+                calendar.set(2025, Calendar.JANUARY, 7, 23, 59, 59);
+                calendar.set(Calendar.MILLISECOND, 999);
+                break;
+            case "Weekly Report":
+                // Set end time to the last day of the current month
+                calendar.set(2025, Calendar.JANUARY, 31, 23, 59, 59);
+                calendar.set(Calendar.MILLISECOND, 999);
+                break;
+            case "Monthly Report":
+                // Set end time to December 31, 2025
+                calendar.set(2025, Calendar.DECEMBER, 31, 23, 59, 59);
+                calendar.set(Calendar.MILLISECOND, 999);
+                break;
+            case "Yearly Report":
+                calendar.add(Calendar.YEAR, 1);
+                calendar.add(Calendar.MILLISECOND, -1); // Subtract one millisecond to get the end time
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid report type");
+        }
+        return calendar.getTimeInMillis();
+    }
+
     // Helper method to get the report period based on the selected range
     private String getReportPeriod(String timeRange) {
         Calendar calendar = Calendar.getInstance();
@@ -831,21 +917,15 @@ public class AdminsuperReports extends AppCompatActivity {
 
         switch (timeRange) {
             case "Daily Report":
-                SimpleDateFormat dailyFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
-                reportPeriod = dailyFormat.format(calendar.getTime());
+                // Set report period to January 1, 2025 - January 7, 2025
+                reportPeriod = "Jan 01, 2025 - Jan 07, 2025";
                 break;
             case "Weekly Report":
-                // Get the start of the week (Sunday)
-                calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
                 SimpleDateFormat weekFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
-                String startOfWeek = weekFormat.format(calendar.getTime());
-
-                // Get the end of the week (Saturday)
-                calendar.add(Calendar.DAY_OF_WEEK, 6);  // Move 6 days ahead to get Saturday
-                String endOfWeek = weekFormat.format(calendar.getTime());
-
-                // Combine both start and end dates
-                reportPeriod = "Week of " + startOfWeek + " - " + endOfWeek;
+                // Ensure the start date is Jan 1, 2025
+                calendar.set(2025, Calendar.JANUARY, 1);
+                String monthName = new SimpleDateFormat("MMMM", Locale.getDefault()).format(calendar.getTime());
+                reportPeriod = "Weekly Report for " + monthName + " 2025";
                 break;
             case "Monthly Report":
                 SimpleDateFormat monthFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
@@ -859,69 +939,5 @@ public class AdminsuperReports extends AppCompatActivity {
                 throw new IllegalArgumentException("Invalid report type");
         }
         return reportPeriod;
-    }
-
-    // Helper method to calculate start time for the selected time range (daily, weekly, etc.)
-    private long getStartTimeForRange(String timeRange, long currentTimeMillis) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(currentTimeMillis);
-
-        switch (timeRange) {
-            case "Daily Report":
-                calendar.set(Calendar.HOUR_OF_DAY, 0);
-                calendar.set(Calendar.MINUTE, 0);
-                calendar.set(Calendar.SECOND, 0);
-                calendar.set(Calendar.MILLISECOND, 0);
-                break;
-            case "Weekly Report":
-                calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
-                calendar.set(Calendar.HOUR_OF_DAY, 0);
-                calendar.set(Calendar.MINUTE, 0);
-                calendar.set(Calendar.SECOND, 0);
-                calendar.set(Calendar.MILLISECOND, 0);
-                break;
-            case "Monthly Report":
-                calendar.set(Calendar.DAY_OF_MONTH, 1);
-                calendar.set(Calendar.HOUR_OF_DAY, 0);
-                calendar.set(Calendar.MINUTE, 0);
-                calendar.set(Calendar.SECOND, 0);
-                calendar.set(Calendar.MILLISECOND, 0);
-                break;
-            case "Yearly Report":
-                calendar.set(Calendar.DAY_OF_YEAR, 1);
-                calendar.set(Calendar.HOUR_OF_DAY, 0);
-                calendar.set(Calendar.MINUTE, 0);
-                calendar.set(Calendar.SECOND, 0);
-                calendar.set(Calendar.MILLISECOND, 0);
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid report type");
-        }
-        return calendar.getTimeInMillis();
-    }
-
-    // Helper method to calculate end time for the selected time range (daily, weekly, etc.)
-    private long getEndTimeForRange(String timeRange, long startTime) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(startTime);
-
-        switch (timeRange) {
-            case "Daily Report":
-                calendar.add(Calendar.DAY_OF_MONTH, 1);
-                break;
-            case "Weekly Report":
-                calendar.add(Calendar.WEEK_OF_YEAR, 1);
-                break;
-            case "Monthly Report":
-                calendar.add(Calendar.MONTH, 1);
-                break;
-            case "Yearly Report":
-                calendar.add(Calendar.YEAR, 1);
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid report type");
-        }
-        calendar.add(Calendar.MILLISECOND, -1); // Subtract one millisecond to get the end time
-        return calendar.getTimeInMillis();
     }
 }
