@@ -1,3 +1,4 @@
+
 package com.example.myapplication.Model;
 
 import android.Manifest;
@@ -177,29 +178,28 @@ public class ReportActivity extends BaseActivity {
 
 
     private void fetchReportData(String timeRange) {
+        long currentTimeMillis = System.currentTimeMillis();
+        long startTime = getStartTimeForRange(timeRange, currentTimeMillis);
+        long endTime = getEndTimeForRange(timeRange, startTime);
+
         // Fetch inventory data (Product and Quantity) based on the selected time range
-        fetchInventoryData(timeRange);
+        fetchInventoryData(timeRange, startTime, endTime);
 
         // Fetch sales data based on the selected option (daily, weekly, monthly, yearly)
-        fetchSalesData(timeRange);
+        fetchSalesData(timeRange, startTime, endTime);
     }
 
-    private void fetchInventoryData(String reportType) {
+    private void fetchInventoryData(String reportType, long startTime, long endTime) {
         databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 StringBuilder data = new StringBuilder(); // To store the fetched data
                 Map<String, Integer> productSales = new HashMap<>(); // To store quantity sold for each product
 
-                // Define the start and end times for the report based on the selected report type
-                long currentTimeMillis = System.currentTimeMillis();
-                long startTime = getStartTimeForRange(reportType, currentTimeMillis);
-                long endTime = getEndTimeForRange(reportType, startTime);
-
                 // Format the dates
                 SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
                 String startDateString = dateFormat.format(new Date(startTime));
-                String currentDateString = dateFormat.format(new Date(currentTimeMillis));
+                String currentDateString = dateFormat.format(new Date(System.currentTimeMillis()));
 
                 // Add the dates to the report
                 data.append("Report Start Date: ").append(startDateString).append("\n");
@@ -379,7 +379,7 @@ public class ReportActivity extends BaseActivity {
                             }
                         }
 
-                        salesReport.append("  Total Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorTotalSales)).append("\n");
+                        salesReport.append("  Total Sales: PHP ").append(String.format(Locale.getDefault(), "%.2f", vendorTotalSales)).append("\n");
 
                         if (!productSales.isEmpty()) {
                             salesReport.append("  Products Sold:\n");
@@ -391,7 +391,7 @@ public class ReportActivity extends BaseActivity {
 
                         salesReport.append("  Discount Information:\n")
                                 .append("    Number of Orders with Discount: ").append(vendorDiscountOrderCount).append("\n")
-                                .append("    Total Discount Amount: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorDiscountAmount)).append("\n\n");
+                                .append("    Total Discount Amount: PHP ").append(String.format(Locale.getDefault(), "%.2f", vendorDiscountAmount)).append("\n\n");
 
                         totalSales += vendorTotalSales;
                         totalDiscountAmount += vendorDiscountAmount;
@@ -401,8 +401,8 @@ public class ReportActivity extends BaseActivity {
 
                 salesReport.append("Total Discount Information:\n")
                         .append("  Number of Orders with Discount: ").append(totalDiscountOrderCount).append("\n")
-                        .append("  Total Discount Amount: ₱").append(String.format(Locale.getDefault(), "%.2f", totalDiscountAmount)).append("\n\n");
-                salesReport.append("Total Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", totalSales)).append("\n");
+                        .append("  Total Discount Amount: PHP ").append(String.format(Locale.getDefault(), "%.2f", totalDiscountAmount)).append("\n\n");
+                salesReport.append("Total Sales: PHP ").append(String.format(Locale.getDefault(), "%.2f", totalSales)).append("\n");
 
                 // Display the sales report
                 textViewSalesReport.setText(salesReport.toString());
@@ -475,8 +475,6 @@ public class ReportActivity extends BaseActivity {
             String orderDetails = sale.child("Invoice").child("orderDetails").getValue(String.class);
             Double totalPrice = sale.child("Invoice").child("totalPrice").getValue(Double.class);
             Double discount = sale.child("Invoice").child("discount").getValue(Double.class);
-            String pwdName = sale.child("Invoice").child("pwdName").getValue(String.class);
-            String pwdId = sale.child("Invoice").child("pwdId").getValue(String.class);
             Double finalPrice = sale.child("Invoice").child("finalPrice").getValue(Double.class);
 
             // Add details to summary
@@ -485,14 +483,20 @@ public class ReportActivity extends BaseActivity {
             salesData.append("Date: ").append(date).append("\n");
             salesData.append("Vendor Name: ").append(vendorName != null ? vendorName : "N/A").append("\n");
             salesData.append("Order Details: ").append(orderDetails != null ? orderDetails : "N/A").append("\n");
-            salesData.append("Total Price: ₱").append(totalPrice != null ? String.format(Locale.getDefault(), "%.2f", totalPrice) : "0.00").append("\n");
+            salesData.append("Total Price: PHP ").append(totalPrice != null ? String.format(Locale.getDefault(), "%.2f", totalPrice) : "0.00").append("\n");
 
             // Check and add discount details if available
             if (discount != null && discount > 0) {
-                salesData.append("Discount: ₱").append(String.format(Locale.getDefault(), "%.2f", discount)).append("\n");
-                salesData.append("PWD/Senior Name: ").append(pwdName != null ? pwdName : "N/A").append("\n");
-                salesData.append("PWD/Senior ID Number: ").append(pwdId != null ? pwdId : "N/A").append("\n");
-                salesData.append("Final Price: ₱").append(finalPrice != null ? String.format(Locale.getDefault(), "%.2f", finalPrice) : "0.00").append("\n");
+                salesData.append("Discount: PHP ").append(String.format(Locale.getDefault(), "%.2f", discount)).append("\n");
+
+                // Fetch PWD/Senior details only if there is a discount
+                String pwdName = sale.child("Invoice").child("pwdName").getValue(String.class);
+                String pwdId = sale.child("Invoice").child("pwdId").getValue(String.class);
+                if (pwdName != null && pwdId != null) {
+                    salesData.append("PWD/Senior Name: ").append(pwdName).append("\n");
+                    salesData.append("PWD/Senior ID Number: ").append(pwdId).append("\n");
+                }
+                salesData.append("Final Price: PHP ").append(finalPrice != null ? String.format(Locale.getDefault(), "%.2f", finalPrice) : "0.00").append("\n");
             }
 
             salesData.append("--------------------------------------\n\n");
@@ -503,6 +507,7 @@ public class ReportActivity extends BaseActivity {
             Log.e("ReportActivity", "Error processing sale for details: " + sale.getKey(), e);
         }
     }
+
 
     private void generateDailyBreakdown(StringBuilder salesReport, DataSnapshot dataSnapshot, long startTime, long endTime) {
         Calendar calendar = Calendar.getInstance();
@@ -547,7 +552,7 @@ public class ReportActivity extends BaseActivity {
                         }
                     }
 
-                    salesReport.append("  Daily Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorDailySales)).append("\n");
+                    salesReport.append("  Daily Sales:PHP ").append(String.format(Locale.getDefault(), "%.2f", vendorDailySales)).append("\n");
                 }
             }
         }
@@ -595,7 +600,7 @@ public class ReportActivity extends BaseActivity {
                         }
                     }
 
-                    salesReport.append("  Monthly Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorMonthlySales)).append("\n");
+                    salesReport.append("  Monthly Sales: PHP ").append(String.format(Locale.getDefault(), "%.2f", vendorMonthlySales)).append("\n");
                 }
             }
         }
@@ -608,8 +613,16 @@ public class ReportActivity extends BaseActivity {
 
         while (calendar.getTimeInMillis() <= endTime) {
             long weekStartTime = calendar.getTimeInMillis();
-            calendar.add(Calendar.WEEK_OF_YEAR, 1);
-            long weekEndTime = calendar.getTimeInMillis() - 1;
+
+            // Ensure the week starts on the first day of the month and cut the week if the month ends
+            int currentMonth = calendar.get(Calendar.MONTH);
+            calendar.add(Calendar.DAY_OF_MONTH, 6);
+            if (calendar.get(Calendar.MONTH) != currentMonth) {
+                calendar.set(Calendar.DAY_OF_MONTH, 1);
+                calendar.add(Calendar.MONTH, 1);
+                calendar.add(Calendar.DAY_OF_MONTH, -1); // Move to the end of the month
+            }
+            long weekEndTime = calendar.getTimeInMillis();
 
             salesReport.append("\nWeekly Breakdown (").append(weekFormat.format(new Date(weekStartTime)))
                     .append(" - ").append(weekFormat.format(new Date(weekEndTime))).append("):\n");
@@ -647,11 +660,13 @@ public class ReportActivity extends BaseActivity {
                     }
 
                     for (Map.Entry<String, Double> entry : dailySales.entrySet()) {
-                        salesReport.append("  ").append(entry.getKey()).append(": ₱")
+                        salesReport.append("  ").append(entry.getKey()).append(": PHP ")
                                 .append(String.format(Locale.getDefault(), "%.2f", entry.getValue())).append("\n");
                     }
                 }
             }
+
+            calendar.add(Calendar.DAY_OF_MONTH, 1); // Move to the next day after the current week
         }
     }
 
@@ -698,7 +713,7 @@ public class ReportActivity extends BaseActivity {
                         }
                     }
 
-                    salesReport.append("  Monthly Sales: ₱").append(String.format(Locale.getDefault(), "%.2f", vendorMonthlySales)).append("\n");
+                    salesReport.append("  Monthly Sales: PHP ").append(String.format(Locale.getDefault(), "%.2f", vendorMonthlySales)).append("\n");
                 }
             }
         }
@@ -719,7 +734,7 @@ public class ReportActivity extends BaseActivity {
 
 
 
-    private void fetchSalesData(String timeRange) {
+    private void fetchSalesData(String timeRange, long startTime, long endTime) {
         salesDatabaseReference.orderByChild("Status").equalTo("completed").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -731,66 +746,84 @@ public class ReportActivity extends BaseActivity {
                 // Initialize a map to hold sales amounts for each period
                 Map<String, Double> periodSales = new LinkedHashMap<>();
                 // Initialize a map to hold product sales data for each period
-                Map<String, Map<String, Integer>> periodProductSales = new LinkedHashMap<>();
+                Map<String, Map<String, ProductSalesData>> periodProductSales = new LinkedHashMap<>();
                 // Initialize a map to hold discount information for each period
                 Map<String, Integer> periodDiscountOrderCount = new LinkedHashMap<>();
                 Map<String, Double> periodDiscountAmount = new LinkedHashMap<>();
                 // Initialize a map to hold total product sales data
-                Map<String, Integer> totalProductSales = new LinkedHashMap<>();
+                Map<String, ProductSalesData> totalProductSales = new LinkedHashMap<>();
                 SimpleDateFormat periodFormat; // For formatting periods based on time range
                 String reportTitle = "";
 
-                long currentTimeMillis = System.currentTimeMillis();
-                long startTime = getStartTimeForRange(timeRange, currentTimeMillis);
-                long endTime = getEndTimeForRange(timeRange, startTime);
-
+                // Determine the period format and title based on the report type
                 switch (timeRange) {
                     case "Daily Report":
-                        periodFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()); // e.g., "Dec 29, 2024"
-                        reportTitle = "Daily Sales Report for " + periodFormat.format(new Date(startTime));
+                        periodFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()); // e.g., "Jan 01, 2025"
+                        reportTitle = "Daily Sales Report from Jan 01, 2025 - Jan 07, 2025";
                         break;
                     case "Weekly Report":
-                        periodFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()); // e.g., "Dec 23, 2024 - Dec 29, 2024"
-                        reportTitle = "Weekly Sales Report";
+                        periodFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()); // e.g., "Jan 01, 2025 - Jan 07, 2025"
+                        reportTitle = "Weekly Sales Report for January 2025";
                         break;
                     case "Monthly Report":
-                        periodFormat = new SimpleDateFormat("MMM dd", Locale.getDefault()); // e.g., "Dec 01 - Dec 07"
-                        reportTitle = "Monthly Sales Report for December 2024";
+                        periodFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault()); // e.g., "January 2025"
+                        reportTitle = "Monthly Sales Report for 2025";
                         break;
                     case "Yearly Report":
-                        periodFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault()); // e.g., "December 2024"
-                        reportTitle = "Yearly Sales Report for 2024";
+                        periodFormat = new SimpleDateFormat("yyyy", Locale.getDefault()); // e.g., "2025"
+                        reportTitle = "Yearly Sales Report for 2025";
                         break;
                     default:
                         throw new IllegalArgumentException("Invalid report type");
                 }
 
-                if (timeRange.equals("Monthly Report")) {
-                    Calendar calendar = Calendar.getInstance();
-                    calendar.setTimeInMillis(startTime);
-                    int weekNumber = 1;
+                // Set up the periods for the report
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(startTime);
 
-                    while (calendar.getTimeInMillis() <= endTime) {
-                        Calendar weekStart = (Calendar) calendar.clone();
-                        Calendar weekEnd = (Calendar) calendar.clone();
-                        weekEnd.add(Calendar.DAY_OF_YEAR, 6); // End of the week
-
-                        if (weekEnd.getTimeInMillis() > endTime) {
-                            weekEnd.setTimeInMillis(endTime); // Adjust the end to the last day of the month
-                        }
-
-                        String weekPeriod = "Week " + weekNumber + " (" + periodFormat.format(weekStart.getTime()) + " - " + periodFormat.format(weekEnd.getTime()) + ")";
+                if (timeRange.equals("Daily Report")) {
+                    for (int i = 0; i < 7; i++) {
+                        String dayPeriod = periodFormat.format(calendar.getTime());
+                        periodSales.put(dayPeriod, 0.0);
+                        periodProductSales.put(dayPeriod, new LinkedHashMap<>());
+                        periodDiscountOrderCount.put(dayPeriod, 0);
+                        periodDiscountAmount.put(dayPeriod, 0.0);
+                        calendar.add(Calendar.DAY_OF_YEAR, 1);
+                    }
+                } else if (timeRange.equals("Weekly Report")) {
+                    String[] weekPeriods = {
+                            "Week 1 (Jan 01, 2025 - Jan 07, 2025)",
+                            "Week 2 (Jan 08, 2025 - Jan 14, 2025)",
+                            "Week 3 (Jan 15, 2025 - Jan 21, 2025)",
+                            "Week 4 (Jan 22, 2025 - Jan 28, 2025)",
+                            "Week 5 (Jan 29, 2025 - Jan 31, 2025)"
+                    };
+                    for (String weekPeriod : weekPeriods) {
                         periodSales.put(weekPeriod, 0.0);
-                        periodProductSales.put(weekPeriod, new HashMap<>());
+                        periodProductSales.put(weekPeriod, new LinkedHashMap<>());
                         periodDiscountOrderCount.put(weekPeriod, 0);
                         periodDiscountAmount.put(weekPeriod, 0.0);
-
-                        // Move to the next week
-                        calendar.add(Calendar.WEEK_OF_YEAR, 1);
-                        weekNumber++;
                     }
+                } else if (timeRange.equals("Monthly Report")) {
+                    for (int i = 0; i < 12; i++) {
+                        String monthPeriod = periodFormat.format(calendar.getTime());
+                        periodSales.put(monthPeriod, 0.0);
+                        periodProductSales.put(monthPeriod, new LinkedHashMap<>());
+                        periodDiscountOrderCount.put(monthPeriod, 0);
+                        periodDiscountAmount.put(monthPeriod, 0.0);
+                        calendar.add(Calendar.MONTH, 1);
+                    }
+                } else if (timeRange.equals("Yearly Report")) {
+                    // Only include the year 2025
+                    calendar.set(Calendar.YEAR, 2025);
+                    String yearPeriod = periodFormat.format(calendar.getTime());
+                    periodSales.put(yearPeriod, 0.0);
+                    periodProductSales.put(yearPeriod, new LinkedHashMap<>());
+                    periodDiscountOrderCount.put(yearPeriod, 0);
+                    periodDiscountAmount.put(yearPeriod, 0.0);
                 }
 
+                // Process sales data and categorize into periods
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     String date = snapshot.child("Date").getValue(String.class);
                     Double finalPrice = null;
@@ -816,17 +849,29 @@ public class ReportActivity extends BaseActivity {
                         if (saleDate != null && saleDate.getTime() >= startTime && saleDate.getTime() <= endTime) {
                             // Get the period for the sale date
                             String period = "";
-                            if (timeRange.equals("Monthly Report")) {
-                                Calendar saleCalendar = Calendar.getInstance();
-                                saleCalendar.setTime(saleDate);
+                            if (timeRange.equals("Daily Report")) {
+                                period = periodFormat.format(saleDate);
+                            } else if (timeRange.equals("Weekly Report")) {
                                 for (String weekPeriod : periodSales.keySet()) {
-                                    if (weekPeriod.contains(periodFormat.format(saleCalendar.getTime()))) {
+                                    SimpleDateFormat weekPeriodFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+                                    String[] weekPeriodParts = weekPeriod.split(" \\(")[1].split(" - ");
+                                    Date weekPeriodStart = weekPeriodFormat.parse(weekPeriodParts[0]);
+                                    Date weekPeriodEnd = weekPeriodFormat.parse(weekPeriodParts[1].replace(")", ""));
+                                    if (saleDate.getTime() >= weekPeriodStart.getTime() && saleDate.getTime() <= weekPeriodEnd.getTime()) {
                                         period = weekPeriod;
                                         break;
                                     }
                                 }
-                            } else {
-                                period = periodFormat.format(saleDate);
+                            } else if (timeRange.equals("Monthly Report")) {
+                                SimpleDateFormat monthPeriodFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
+                                period = monthPeriodFormat.format(saleDate);
+                            } else if (timeRange.equals("Yearly Report")) {
+                                SimpleDateFormat yearPeriodFormat = new SimpleDateFormat("yyyy", Locale.getDefault());
+                                period = yearPeriodFormat.format(saleDate);
+                                // Exclude year 2024
+                                if (period.equals("2024")) {
+                                    continue;
+                                }
                             }
 
                             if (!period.isEmpty()) {
@@ -836,20 +881,24 @@ public class ReportActivity extends BaseActivity {
 
                                 // Update product sales data for the period
                                 if (!periodProductSales.containsKey(period)) {
-                                    periodProductSales.put(period, new HashMap<>());
+                                    periodProductSales.put(period, new LinkedHashMap<>());
                                 }
-                                Map<String, Integer> productSales = periodProductSales.get(period);
+                                Map<String, ProductSalesData> productSales = periodProductSales.get(period);
                                 for (DataSnapshot productSnapshot : snapshot.child("Products").getChildren()) {
                                     String productName = productSnapshot.child("Product").getValue(String.class);
                                     Integer quantitySold = productSnapshot.child("Quantity").getValue(Integer.class);
                                     if (productName != null && quantitySold != null) {
                                         // Update period product sales
-                                        int currentQuantity = productSales.getOrDefault(productName, 0);
-                                        productSales.put(productName, currentQuantity + quantitySold);
+                                        ProductSalesData productSalesData = productSales.getOrDefault(productName, new ProductSalesData(0, 0.0));
+                                        productSalesData.totalQuantitySold += quantitySold;
+                                        productSalesData.totalSalesAmount += finalPrice;
+                                        productSales.put(productName, productSalesData);
 
                                         // Update total product sales
-                                        int totalQuantity = totalProductSales.getOrDefault(productName, 0);
-                                        totalProductSales.put(productName, totalQuantity + quantitySold);
+                                        ProductSalesData totalSalesData = totalProductSales.getOrDefault(productName, new ProductSalesData(0, 0.0));
+                                        totalSalesData.totalQuantitySold += quantitySold;
+                                        totalSalesData.totalSalesAmount += finalPrice;
+                                        totalProductSales.put(productName, totalSalesData);
                                     }
                                 }
 
@@ -878,40 +927,48 @@ public class ReportActivity extends BaseActivity {
                 salesReport.append(reportTitle).append("\n\n");
                 for (Map.Entry<String, Double> entry : periodSales.entrySet()) {
                     salesReport.append("Period: ").append(entry.getKey()).append("\n");
-                    salesReport.append("Sales: ₱").append(String.format("%.2f", entry.getValue()))
+                    salesReport.append("Sales: PHP ").append(String.format("%.2f", entry.getValue()))
                             .append("\n\n");
 
                     // Include product sales data for the period
-                    Map<String, Integer> productSales = periodProductSales.get(entry.getKey());
+                    Map<String, ProductSalesData> productSales = periodProductSales.get(entry.getKey());
                     if (productSales != null && !productSales.isEmpty()) {
                         salesReport.append("Products Sold:\n\n");
-                        for (Map.Entry<String, Integer> productEntry : productSales.entrySet()) {
-                            salesReport.append("Product: ").append(productEntry.getKey()).append("\nQuantity Sold: ").append(productEntry.getValue()).append(" pc/s").append("\n\n");
+                        for (Map.Entry<String, ProductSalesData> productEntry : productSales.entrySet()) {
+                            salesReport.append("Product: ").append(productEntry.getKey())
+                                    .append("\nQuantity Sold: ").append(productEntry.getValue().totalQuantitySold)
+                                    .append(" pc/s\nTotal Sales: PHP ").append(String.format("%.2f", productEntry.getValue().totalSalesAmount))
+                                    .append("\n\n");
                         }
+                    } else {
+                        salesReport.append("No products sold.\n\n");
                     }
 
                     // Include discount information for the period
                     salesReport.append("Discount Information:\n")
                             .append("Number of Orders with Discount: ").append(periodDiscountOrderCount.get(entry.getKey())).append("\n")
-                            .append("Total Discount Amount: ₱").append(String.format("%.2f", periodDiscountAmount.get(entry.getKey()))).append("\n")
+                            .append("Total Discount Amount: PHP ").append(String.format("%.2f", periodDiscountAmount.get(entry.getKey()))).append("\n")
                             .append("---------------------------------\n\n");
                 }
 
                 // Include total product sales before the overall total sales
                 salesReport.append("Total Products Sold:\n");
-                for (Map.Entry<String, Integer> entry : totalProductSales.entrySet()) {
-                    salesReport.append("Product: ").append(entry.getKey()).append("\nQuantity Sold: ").append(entry.getValue()).append(" pc/s").append("\n\n");
+                for (Map.Entry<String, ProductSalesData> entry : totalProductSales.entrySet()) {
+                    salesReport.append("Product: ").append(entry.getKey())
+                            .append("\nQuantity Sold: ").append(entry.getValue().totalQuantitySold)
+                            .append(" pc/s\nTotal Sales: PHP ").append(String.format("%.2f", entry.getValue().totalSalesAmount))
+                            .append("\n\n");
                 }
                 salesReport.append("---------------------------------\n\n");
 
                 // Include the discount information before the total sales
                 salesReport.append("Total Discount Information:\n")
                         .append("Number of Orders with Discount: ").append(totalDiscountOrderCount).append("\n")
-                        .append("Total Discount Amount: ₱").append(String.format("%.2f", totalDiscountAmount)).append("\n")
+                        .append("Total Discount Amount: PHP ").append(String.format("%.2f", totalDiscountAmount)).append("\n")
                         .append("---------------------------------\n\n");
 
                 // Include the overall total at the end of the report
-                salesReport.append("Total Sales: ₱").append(String.format("%.2f", totalSalesAmount))
+                salesReport.append("Total Sales: PHP ").append(String.format("%.2f", totalSalesAmount))
                         .append("\n---------------------------------");
 
                 // Display the report
@@ -929,25 +986,59 @@ public class ReportActivity extends BaseActivity {
 
 
     // Helper method to calculate start time for the selected time range (daily, weekly, etc.)
+// Helper method to get the report period based on the selected range
+    private String getReportPeriod(String timeRange) {
+        Calendar calendar = Calendar.getInstance();
+        String reportPeriod = "";
+
+        switch (timeRange) {
+            case "Daily Report":
+                // Set report period to January 1, 2025 - January 7, 2025
+                reportPeriod = "Daily Report: Jan 01, 2025 - Jan 07, 2025";
+                break;
+            case "Weekly Report":
+                SimpleDateFormat weekFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+                calendar.set(Calendar.DAY_OF_MONTH, 1);
+                String startOfMonth = weekFormat.format(calendar.getTime());
+                calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
+                String endOfMonth = weekFormat.format(calendar.getTime());
+                reportPeriod = "Weekly Report: " + startOfMonth + " - " + endOfMonth;
+                break;
+            case "Monthly Report":
+                SimpleDateFormat monthFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
+                reportPeriod = "Monthly Report: " + monthFormat.format(calendar.getTime());
+                break;
+            case "Yearly Report":
+                SimpleDateFormat yearFormat = new SimpleDateFormat("yyyy", Locale.getDefault());
+                reportPeriod = "Yearly Report: Year " + yearFormat.format(calendar.getTime());
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid report type");
+        }
+        return reportPeriod;
+    }
+
+    // Helper method to calculate start time for the selected time range (daily, weekly, etc.)
     private long getStartTimeForRange(String timeRange, long currentTimeMillis) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(currentTimeMillis);
 
         switch (timeRange) {
             case "Daily Report":
-                calendar.set(Calendar.HOUR_OF_DAY, 0);
-                calendar.set(Calendar.MINUTE, 0);
-                calendar.set(Calendar.SECOND, 0);
+                // Set start time to January 1, 2025
+                calendar.set(2025, Calendar.JANUARY, 1, 0, 0, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
                 break;
             case "Weekly Report":
-                calendar.set(Calendar.DAY_OF_WEEK, calendar.getFirstDayOfWeek());
+                // Ensure the start date is the first day of the current month in 2025
+                calendar.set(Calendar.DAY_OF_MONTH, 1);
                 calendar.set(Calendar.HOUR_OF_DAY, 0);
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
                 break;
             case "Monthly Report":
+                // Set to the start of the current month in 2025
                 calendar.set(Calendar.DAY_OF_MONTH, 1);
                 calendar.set(Calendar.HOUR_OF_DAY, 0);
                 calendar.set(Calendar.MINUTE, 0);
@@ -955,10 +1046,8 @@ public class ReportActivity extends BaseActivity {
                 calendar.set(Calendar.MILLISECOND, 0);
                 break;
             case "Yearly Report":
-                calendar.set(Calendar.DAY_OF_YEAR, 1);
-                calendar.set(Calendar.HOUR_OF_DAY, 0);
-                calendar.set(Calendar.MINUTE, 0);
-                calendar.set(Calendar.SECOND, 0);
+                // Set to the start of January 2025
+                calendar.set(2025, Calendar.JANUARY, 1, 0, 0, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
                 break;
             default:
@@ -974,59 +1063,39 @@ public class ReportActivity extends BaseActivity {
 
         switch (timeRange) {
             case "Daily Report":
-                calendar.add(Calendar.DAY_OF_MONTH, 1);
+                // Set end time to January 7, 2025
+                calendar.set(2025, Calendar.JANUARY, 7, 23, 59, 59);
+                calendar.set(Calendar.MILLISECOND, 999);
                 break;
             case "Weekly Report":
-                calendar.add(Calendar.WEEK_OF_YEAR, 1);
+                // Set end time to the last day of the current month
+                calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
+                calendar.set(Calendar.HOUR_OF_DAY, 23);
+                calendar.set(Calendar.MINUTE, 59);
+                calendar.set(Calendar.SECOND, 59);
+                calendar.set(Calendar.MILLISECOND, 999);
                 break;
             case "Monthly Report":
-                calendar.add(Calendar.MONTH, 1);
+                // Set end time to the last day of the current month
+                calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
+                calendar.set(Calendar.HOUR_OF_DAY, 23);
+                calendar.set(Calendar.MINUTE, 59);
+                calendar.set(Calendar.SECOND, 59);
+                calendar.set(Calendar.MILLISECOND, 999);
                 break;
             case "Yearly Report":
-                calendar.add(Calendar.YEAR, 1);
+                // Set end time to the last millisecond of the year
+                calendar.set(Calendar.MONTH, Calendar.DECEMBER);
+                calendar.set(Calendar.DAY_OF_MONTH, 31);
+                calendar.set(Calendar.HOUR_OF_DAY, 23);
+                calendar.set(Calendar.MINUTE, 59);
+                calendar.set(Calendar.SECOND, 59);
+                calendar.set(Calendar.MILLISECOND, 999);
                 break;
             default:
                 throw new IllegalArgumentException("Invalid report type");
         }
-        calendar.add(Calendar.MILLISECOND, -1); // Subtract one millisecond to get the end time
         return calendar.getTimeInMillis();
-    }
-
-    // Helper method to get the report period based on the selected range
-    private String getReportPeriod(String timeRange) {
-        Calendar calendar = Calendar.getInstance();
-        String reportPeriod = "";
-
-        switch (timeRange) {
-            case "Daily Report":
-                SimpleDateFormat dailyFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
-                reportPeriod = dailyFormat.format(calendar.getTime());
-                break;
-            case "Weekly Report":
-                // Get the start of the week (Sunday)
-                calendar.set(Calendar.DAY_OF_WEEK, calendar.getFirstDayOfWeek());
-                SimpleDateFormat weekFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
-                String startOfWeek = weekFormat.format(calendar.getTime());
-
-                // Get the end of the week (Saturday)
-                calendar.add(Calendar.DAY_OF_WEEK, 6);  // Move 6 days ahead to get Saturday
-                String endOfWeek = weekFormat.format(calendar.getTime());
-
-                // Combine both start and end dates
-                reportPeriod = "Week of " + startOfWeek + " - " + endOfWeek;
-                break;
-            case "Monthly Report":
-                SimpleDateFormat monthFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
-                reportPeriod = monthFormat.format(calendar.getTime());
-                break;
-            case "Yearly Report":
-                SimpleDateFormat yearFormat = new SimpleDateFormat("yyyy", Locale.getDefault());
-                reportPeriod = "Year " + yearFormat.format(calendar.getTime());
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid report type");
-        }
-        return reportPeriod;
     }
 
     // Product sales data structure

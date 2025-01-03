@@ -181,7 +181,7 @@ public class orders extends BaseActivity {
 
     private void resetPrice() {
         if (!cbPwd.isChecked() && !cbSenior.isChecked()) {
-            tvOrderPrice.setText("Total Price: ₱" + String.format("%.2f", originalTotalPrice));
+            tvOrderPrice.setText("Total Price: PHP " + String.format("%.2f", originalTotalPrice));
             tvDiscount.setText(""); // Clear the discount TextView
             tvOrderPrice.setTag(0.0); // Clear the stored discount
         }
@@ -291,8 +291,8 @@ public class orders extends BaseActivity {
                                 if (productName != null && quantity != null && price != null) {
                                     double vatPerProduct = calculateVat(price); // Calculate VAT
                                     orderDetails.append(quantity).append("x ").append(productName).append(", ");
-                                    itemPrices.append(productName).append(" - ₱").append(price).append(", "); // Full price
-                                    vatDetails.append("VAT for ").append(productName).append(": ₱").append(String.format("%.2f", vatPerProduct)).append(", ");
+                                    itemPrices.append(productName).append(" - PHP ").append(price).append(", "); // Full price
+                                    vatDetails.append("VAT for ").append(productName).append(": PHP ").append(String.format("%.2f", vatPerProduct)).append(", ");
                                 }
                             }
 
@@ -302,7 +302,7 @@ public class orders extends BaseActivity {
                             tvVatDetails.setText("VAT Details: " + vatDetails.toString());
                             // Save original price for discount logic
                             originalTotalPrice = totalOrderPrice != null ? totalOrderPrice : 0.0;
-                            tvOrderPrice.setText("Total Price: ₱" + (originalTotalPrice != 0.0 ? originalTotalPrice : "N/A"));
+                            tvOrderPrice.setText("Total Price: PHP " + (originalTotalPrice != 0.0 ? originalTotalPrice : "N/A"));
                             break;
                         }
                     }
@@ -344,9 +344,9 @@ public class orders extends BaseActivity {
                     double discountedPrice = originalTotalPrice - highestDiscount;
 
                     // Update the price displayed in the TextView
-                    tvOrderPrice.setText("Total Price: ₱" + String.format("%.2f", discountedPrice));
+                    tvOrderPrice.setText("Total Price: PHP " + String.format("%.2f", discountedPrice));
                     // Display the discount in the discount TextView
-                    tvDiscount.setText(String.format("Discount: ₱%.2f", highestDiscount));
+                    tvDiscount.setText(String.format("Discount: PHP %.2f", highestDiscount));
                     // Store the discount for later use in the invoice
                     tvOrderPrice.setTag(highestDiscount);
                 }
@@ -427,7 +427,7 @@ public class orders extends BaseActivity {
         String orderDetails = tvOrderDetails.getText().toString().replace("Order Details: ", "").trim();
         String itemPrices = tvItemPrices.getText().toString().replace("Prices: ", "").trim();
         String vatDetails = tvVatDetails.getText().toString().replace("VAT Details: ", "").trim();
-        String totalPriceText = tvOrderPrice.getText().toString().replace("Total Price: ₱", "").trim();
+        String totalPriceText = tvOrderPrice.getText().toString().replace("Total Price: PHP ", "").trim();
 
         // Use a single-element array to hold the total price
         final double[] totalPrice = {0.0};
@@ -443,7 +443,7 @@ public class orders extends BaseActivity {
         double discount = tvOrderPrice.getTag() != null ? (double) tvOrderPrice.getTag() : 0.0;
 
         // Update the discount TextView
-        tvDiscount.setText(String.format("Discount: ₱%.2f", discount));
+        tvDiscount.setText(String.format("Discount: PHP %.2f", discount));
 
         // Fetch order data from Firebase
         DatabaseReference orderRef = databaseReference.child(userId).child("orders").child(orderId);

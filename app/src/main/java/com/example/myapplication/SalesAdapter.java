@@ -43,10 +43,10 @@ public class SalesAdapter extends FirebaseRecyclerAdapter<SalesModel, SalesAdapt
             // For Siomai, base the price on the unit price and the quantity
             double unitPrice = model.getPrice(); // e.g., ₱15 per piece for Siomai
             double priceFor4Pieces = unitPrice * 4; // Default price for 4 pieces
-            holder.Price.setText(String.format("Price: ₱%.2f", priceFor4Pieces));
+            holder.Price.setText(String.format("Price: PHP %.2f", priceFor4Pieces));
         } else {
             // For other products, show price as unit price * quantity
-            holder.Price.setText(String.format("Price: ₱%.2f", model.getPrice()));
+            holder.Price.setText(String.format("Price: PHP %.2f", model.getPrice()));
         }
 
         // Load image with Glide
@@ -87,7 +87,7 @@ public class SalesAdapter extends FirebaseRecyclerAdapter<SalesModel, SalesAdapt
                     // Price logic for Siomai
                     double unitPrice = model.getPrice(); // e.g., ₱15 per piece for Siomai
                     double totalPrice = count[0] > 4 ? (unitPrice * 4) + ((count[0] - 4) * unitPrice) : (unitPrice * count[0]);
-                    holder.Price.setText(String.format("Price: ₱%.2f", totalPrice));
+                    holder.Price.setText(String.format("Price: PHP %.2f", totalPrice));
 
                 } else {
                     // For other products, increase by 1 freely without any special logic
@@ -97,7 +97,7 @@ public class SalesAdapter extends FirebaseRecyclerAdapter<SalesModel, SalesAdapt
 
                         // Price logic for other products (unit price * quantity)
                         double totalPrice = model.getPrice() * count[0];
-                        holder.Price.setText(String.format("Price: ₱%.2f", totalPrice));
+                        holder.Price.setText(String.format("Price: PHP %.2f", totalPrice));
                     }
                 }
 
@@ -120,7 +120,7 @@ public class SalesAdapter extends FirebaseRecyclerAdapter<SalesModel, SalesAdapt
                     // Price logic for Siomai
                     double unitPrice = model.getPrice(); // e.g., ₱15 per piece for Siomai
                     double totalPrice = count[0] > 4 ? (unitPrice * 4) + ((count[0] - 4) * unitPrice) : (unitPrice * 4);
-                    holder.Price.setText(String.format("Price: ₱%.2f", totalPrice));
+                    holder.Price.setText(String.format("Price: PHP %.2f", totalPrice));
 
                 } else {
                     // For other products, reduce by 1 freely and show unit price even when quantity is 0
@@ -130,7 +130,7 @@ public class SalesAdapter extends FirebaseRecyclerAdapter<SalesModel, SalesAdapt
                     }
 
                     // Price for other products (unit price * quantity), even if quantity is 0
-                    holder.Price.setText(String.format("Price: ₱%.2f", model.getPrice()));
+                    holder.Price.setText(String.format("Price: PHP %.2f", model.getPrice()));
                 }
 
                 if (count[0] == 0) {

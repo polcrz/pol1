@@ -55,16 +55,16 @@ public class InvoiceActivity extends AppCompatActivity {
             invoiceDetails.append(String.format("Order Details: %s\n", invoice.getOrderDetails()));
             invoiceDetails.append(String.format("Item Prices: %s\n", invoice.getItemPrices()));
             invoiceDetails.append(String.format("VAT Details: %s\n", invoice.getVatDetails()));
-            invoiceDetails.append(String.format("Total Price: ₱%.2f\n", invoice.getTotalPrice()));
+            invoiceDetails.append(String.format("Total Price: PHP %.2f\n", invoice.getTotalPrice()));
 
             // Add discount details if applicable
             if (invoice.getDiscount() > 0) {
-                invoiceDetails.append(String.format("Discount: ₱%.2f\n", invoice.getDiscount()));
-                invoiceDetails.append(String.format("Final Price: ₱%.2f\n", invoice.getFinalPrice()));
+                invoiceDetails.append(String.format("Discount: PHP %.2f\n", invoice.getDiscount()));
+                invoiceDetails.append(String.format("Final Price: PHP %.2f\n", invoice.getFinalPrice()));
             }
 
-            invoiceDetails.append(String.format("Cash Payment: ₱%.2f\n", invoice.getCashPayment()));
-            invoiceDetails.append(String.format("Change: ₱%.2f\n", invoice.getChange()));
+            invoiceDetails.append(String.format("Cash Payment: PHP %.2f\n", invoice.getCashPayment()));
+            invoiceDetails.append(String.format("Change: PHP %.2f\n", invoice.getChange()));
 
             // Conditionally add PWD/Senior details
             if (invoice.getPwdName() != null && !invoice.getPwdName().isEmpty() && invoice.getPwdId() != null && !invoice.getPwdId().isEmpty()) {

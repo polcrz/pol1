@@ -178,14 +178,10 @@ public class salesPopUp extends AppCompatActivity {
 
     // Get the week range for the current week
     private String getWeekRange() {
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
-        Date weekStart = calendar.getTime();
-        calendar.add(Calendar.DATE, 6); // Add 6 days for the end of the week
-        Date weekEnd = calendar.getTime();
-
-        SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault());
-        return sdf.format(weekStart) + " - " + sdf.format(weekEnd);
+        // Define the specific date range for the weekly sales
+        String weekStart = "January 1, 2025";
+        String weekEnd = "January 7, 2025";
+        return weekStart + " - " + weekEnd;
     }
 
     // Get the current month

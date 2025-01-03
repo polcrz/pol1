@@ -18,6 +18,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -128,6 +129,7 @@ public class MainActivity extends BaseActivity {
     }
 
     // Method to fetch and display today's total sales from final price (after discounts) for only "completed" orders
+    // Method to fetch and display today's total sales from final price (after discounts) for only "completed" orders
     private void fetchTodaysTotalSales() {
         String userId = auth.getCurrentUser().getUid(); // Get current user ID from Firebase Auth
 
@@ -139,6 +141,7 @@ public class MainActivity extends BaseActivity {
 
         // Get today's date in the format that matches the order date format in Firebase
         String todayDate = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(new Date());
+        Log.d("MainActivity", "Today's date: " + todayDate); // Log today's date
 
         ordersRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -147,32 +150,42 @@ public class MainActivity extends BaseActivity {
 
                 // Loop through the orders
                 for (DataSnapshot orderSnapshot : snapshot.getChildren()) {
+                    // Log the entire order snapshot for debugging
+                    Log.d("MainActivity", "Order Snapshot: " + orderSnapshot.toString());
+
                     String orderDate = orderSnapshot.child("Date").getValue(String.class); // Order date
                     String orderStatus = orderSnapshot.child("Status").getValue(String.class); // Order status
 
+                    // Log order details
+                    Log.d("MainActivity", "Order Date: " + orderDate + ", Status: " + orderStatus);
+
                     // Check if the order's date matches today and the status is "completed"
-                    if (orderDate != null && orderDate.startsWith(todayDate) && "completed".equals(orderStatus)) {
-                        // Access the invoice for the order and get the final price (after any discounts)
-                        DataSnapshot invoiceSnapshot = orderSnapshot.child("Invoice");
-                        if (invoiceSnapshot.exists()) {
-                            Double finalPrice = invoiceSnapshot.child("finalPrice").getValue(Double.class); // Final price after discounts
-                            if (finalPrice != null) {
-                                totalSales += finalPrice; // Add the final price to today's total sales
-                                Log.d("MainActivity", "Added final price: ₱" + finalPrice);
+                    if (orderDate != null && orderStatus != null && "completed".equals(orderStatus)) {
+                        if (isSameDay(orderDate, todayDate)) {
+                            // Access the invoice for the order and get the final price (after any discounts)
+                            DataSnapshot invoiceSnapshot = orderSnapshot.child("Invoice");
+                            if (invoiceSnapshot.exists()) {
+                                Double finalPrice = invoiceSnapshot.child("finalPrice").getValue(Double.class); // Final price after discounts
+                                if (finalPrice != null) {
+                                    totalSales += finalPrice; // Add the final price to today's total sales
+                                    Log.d("MainActivity", "Added final price: PHP " + finalPrice);
+                                } else {
+                                    Log.w("MainActivity", "No finalPrice found in invoice for order: " + orderSnapshot.getKey());
+                                }
                             } else {
-                                Log.w("MainActivity", "No finalPrice found in invoice for order: " + orderSnapshot.getKey());
+                                Log.w("MainActivity", "No invoice found for order: " + orderSnapshot.getKey());
                             }
                         } else {
-                            Log.w("MainActivity", "No invoice found for order: " + orderSnapshot.getKey());
+                            Log.d("MainActivity", "Skipping order: Date does not match today's date.");
                         }
                     }
                 }
 
                 // Log the total sales to check if it's computed correctly
-                Log.d("MainActivity", "Today's Total Sales: ₱" + totalSales);
+                Log.d("MainActivity", "Today's Total Sales: PHP " + totalSales);
 
                 // Update the UI with the total sales value
-                currentSales.setText("Today's Sales: ₱" + String.format(Locale.getDefault(), "%.2f", totalSales));
+                currentSales.setText("Today's Sales: PHP " + String.format(Locale.getDefault(), "%.2f", totalSales));
             }
 
             @Override
@@ -181,6 +194,33 @@ public class MainActivity extends BaseActivity {
                 currentSales.setText("Error fetching today's sales");
             }
         });
+    }
+
+
+
+    private boolean isSameDay(String orderDate, String todayDate) {
+        try {
+            // Define a date format that ignores time and only compares the date part
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+
+            // Parse the order date and today's date
+            Date orderDateParsed = dateFormat.parse(orderDate);
+            Date todayParsed = dateFormat.parse(todayDate);
+
+            if (orderDateParsed != null && todayParsed != null) {
+                // Normalize both dates to the same format (date only, without time)
+                SimpleDateFormat onlyDateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
+                String orderDateStr = onlyDateFormat.format(orderDateParsed);
+                String todayDateStr = onlyDateFormat.format(todayParsed);
+
+                // Compare the date part only
+                return orderDateStr.equals(todayDateStr);
+            }
+        } catch (ParseException e) {
+            Log.e("MainActivity", "Date parsing error: " + e.getMessage());
+        }
+        return false;
     }
 
 
@@ -220,14 +260,14 @@ public class MainActivity extends BaseActivity {
                                     .append("Product: ").append(productName).append(" is out of stock.\n");
                         } else {
                             // Check for Siomai low stock
-                            if ("Siomai".equalsIgnoreCase(productName) && productQuantity <= 100) {
+                            if ("Siomai".equalsIgnoreCase(productName) && productQuantity < 100) {
                                 warningsBuilder.append("Warning!\n")
                                         .append("Siomai stock is low (Quantity: ")
                                         .append(productQuantity).append(")\n");
                             }
 
                             // Check for Gulaman low stock
-                            if ("Gulaman".equalsIgnoreCase(productName) && productQuantity <= 50) {
+                            if ("Gulaman".equalsIgnoreCase(productName) && productQuantity < 100) {
                                 warningsBuilder.append("Warning!\n")
                                         .append("Gulaman stock is low (Quantity: ")
                                         .append(productQuantity).append(")\n");
