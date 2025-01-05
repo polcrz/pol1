@@ -231,11 +231,37 @@ public class SalesRecord extends BaseActivity {
     }
 
     private void updateSalesDisplay() {
-        // Update the TextViews with the calculated sales totals
-        dailySalesTextView.setText("Daily Sales: PHP " + String.format("%.2f", todaySales));
-        weeklySalesTextView.setText("Weekly Sales: PHP " + String.format("%.2f", weeklySales));
-        monthlySalesTextView.setText("Monthly Sales: PHP " + String.format("%.2f", monthlySales));
-        yearlySalesTextView.setText("Yearly Sales: PHP " + String.format("%.2f", yearlySales));
+        // Get current dates
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+        String todayDate = dateFormat.format(new Date());
+
+        Calendar calendar = Calendar.getInstance();
+
+        // Set to the start of the month
+        calendar.set(Calendar.DAY_OF_MONTH, 1);
+        String weekStartDate = dateFormat.format(calendar.getTime());
+
+        // Calculate the end of the first week
+        calendar.add(Calendar.DAY_OF_MONTH, 6);
+        String weekEndDate = dateFormat.format(calendar.getTime());
+
+        // Check if the week end date is past the end of the month
+        if (calendar.get(Calendar.DAY_OF_MONTH) > calendar.getActualMaximum(Calendar.DAY_OF_MONTH)) {
+            calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
+            weekEndDate = dateFormat.format(calendar.getTime());
+        }
+
+        SimpleDateFormat monthFormat = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
+        String currentMonth = monthFormat.format(new Date());
+
+        SimpleDateFormat yearFormat = new SimpleDateFormat("yyyy", Locale.getDefault());
+        String currentYear = yearFormat.format(new Date());
+
+        // Update the TextViews with the calculated sales totals and dates
+        dailySalesTextView.setText("Daily Sales (" + todayDate + "): \nPHP " + String.format("%.2f", todaySales));
+        weeklySalesTextView.setText("Weekly Sales (" + weekStartDate + " - " + weekEndDate + "): \nPHP " + String.format("%.2f", weeklySales));
+        monthlySalesTextView.setText("Monthly Sales (" + currentMonth + "): \nPHP " + String.format("%.2f", monthlySales));
+        yearlySalesTextView.setText("Yearly Sales (" + currentYear + "): \nPHP " + String.format("%.2f", yearlySales));
     }
 
     private String formatDate(String date) {

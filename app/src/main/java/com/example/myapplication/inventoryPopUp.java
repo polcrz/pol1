@@ -2,7 +2,6 @@ package com.example.myapplication;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -36,7 +35,6 @@ public class inventoryPopUp extends AppCompatActivity {
     private DatabaseReference usersRef;
     private LinearLayout inventoryLayout;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,7 +46,7 @@ public class inventoryPopUp extends AppCompatActivity {
 
         back.setOnClickListener(v -> finish());
 
-        addProductBtn.setOnClickListener(v -> showAddProductDialog());
+        addProductBtn.setOnClickListener(v -> showVendorSelectionDialog((vendorId, vendorName) -> showAddProductDialog(vendorId, vendorName)));
 
         usersRef = FirebaseDatabase.getInstance().getReference().child("users");
 
@@ -149,9 +147,58 @@ public class inventoryPopUp extends AppCompatActivity {
         });
     }
 
-    private void showAddProductDialog() {
+    private void showVendorSelectionDialog(OnVendorSelectedListener listener) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Add Product");
+        builder.setTitle("Select Vendor");
+
+        // Create a layout to display the list of vendors
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(16, 16, 16, 16);
+
+        usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                // Create the layout before the loop to ensure it's effectively final
+                LinearLayout layout = new LinearLayout(inventoryPopUp.this);
+                layout.setOrientation(LinearLayout.VERTICAL);
+                layout.setPadding(16, 16, 16, 16);
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(inventoryPopUp.this);
+
+                for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
+                    String role = userSnapshot.child("role").getValue(String.class);
+                    if ("vendor".equalsIgnoreCase(role)) {
+                        final String vendorName = userSnapshot.child("name").getValue(String.class);
+                        final String vendorId = userSnapshot.getKey();
+
+                        // Create a button for each vendor
+                        Button vendorButton = new Button(inventoryPopUp.this);
+                        vendorButton.setText(vendorName != null ? vendorName : "Unknown Vendor");
+                        vendorButton.setOnClickListener(v -> listener.onVendorSelected(vendorId, vendorName != null ? vendorName : "Unknown Vendor"));
+                        layout.addView(vendorButton);
+                    }
+                }
+
+                builder.setView(layout);
+                builder.setNegativeButton(android.R.string.cancel, (dialog, which) -> dialog.cancel());
+                builder.show();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e("inventoryPopUp", "Database error: " + databaseError.getMessage());
+            }
+        });
+    }
+
+    interface OnVendorSelectedListener {
+        void onVendorSelected(String vendorId, String vendorName);
+    }
+
+    private void showAddProductDialog(String vendorId, String vendorName) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Add Product to " + vendorName);
 
         View viewInflated = LayoutInflater.from(this).inflate(R.layout.dialog_add_product, (ViewGroup) findViewById(android.R.id.content), false);
         final TextInputEditText inputProductName = viewInflated.findViewById(R.id.inputProductName);
@@ -168,7 +215,7 @@ public class inventoryPopUp extends AppCompatActivity {
                 int quantity = Integer.parseInt(inputQuantity.getText().toString());
                 double price = Double.parseDouble(inputPrice.getText().toString());
                 String image = inputImage.getText().toString();
-                addProduct(productName, quantity, price, image);
+                addProductToVendor(vendorId, productName, quantity, price, image);
             }
         });
         builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -181,40 +228,23 @@ public class inventoryPopUp extends AppCompatActivity {
         builder.show();
     }
 
-    private void addProduct(String productName, int quantity, double price, String image) {
-        // Search for users with the "vendor" role
-        usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
+    private void addProductToVendor(String vendorId, String productName, int quantity, double price, String image) {
+        DatabaseReference vendorProductsRef = usersRef.child(vendorId).child("products").push();
+        Map<String, Object> productData = new HashMap<>();
+        productData.put("Product", productName);
+        productData.put("Quantity", quantity);
+        productData.put("Price", price);
+        if (image != null && !image.isEmpty()) {
+            productData.put("Image", image);
+        }
+        vendorProductsRef.setValue(productData).addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
-                    String role = userSnapshot.child("role").getValue(String.class);
-                    if ("vendor".equalsIgnoreCase(role)) {
-                        // Add the product to the vendor's products node
-                        DatabaseReference vendorProductsRef = userSnapshot.getRef().child("products").push();
-                        Map<String, Object> productData = new HashMap<>();
-                        productData.put("Product", productName);
-                        productData.put("Quantity", quantity);
-                        productData.put("Price", price);
-                        if (image != null && !image.isEmpty()) {
-                            productData.put("Image", image);
-                        }
-                        vendorProductsRef.setValue(productData).addOnCompleteListener(new OnCompleteListener<Void>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Void> task) {
-                                if (task.isSuccessful()) {
-                                    Log.d("Firebase", "Product added successfully to vendor: " + userSnapshot.getKey());
-                                } else {
-                                    Log.d("Firebase", "Failed to add product to vendor: " + userSnapshot.getKey());
-                                }
-                            }
-                        });
-                    }
+            public void onComplete(@NonNull Task<Void> task) {
+                if (task.isSuccessful()) {
+                    Log.d("Firebase", "Product added successfully to vendor: " + vendorId);
+                } else {
+                    Log.d("Firebase", "Failed to add product to vendor: " + vendorId);
                 }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.e("Firebase", "Database error: " + databaseError.getMessage());
             }
         });
     }
@@ -277,7 +307,6 @@ public class inventoryPopUp extends AppCompatActivity {
     }
 
     private void editProduct(String vendorId, String productId, String productName, int quantity, double price, String image) {
-        // Implement your logic to edit the product in the Firebase database
         DatabaseReference productRef = usersRef.child(vendorId).child("products").child(productId);
 
         Map<String, Object> productUpdates = new HashMap<>();
@@ -290,7 +319,6 @@ public class inventoryPopUp extends AppCompatActivity {
     }
 
     private void deleteProduct(String vendorId, String productId) {
-        // Implement your logic to delete the product from the Firebase database
         DatabaseReference productRef = usersRef.child(vendorId).child("products").child(productId);
         productRef.removeValue();
     }
@@ -300,7 +328,6 @@ public class inventoryPopUp extends AppCompatActivity {
     }
 
     private void handleDeleteButtonClick(String vendorId, String productId) {
-        // Show a confirmation dialog before deleting the product
         new AlertDialog.Builder(this)
                 .setTitle("Delete Product")
                 .setMessage("Are you sure you want to delete this product?")

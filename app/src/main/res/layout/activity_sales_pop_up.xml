@@ -36,7 +36,7 @@
             android:layout_gravity="end"
             android:layout_marginStart="150dp"
             android:backgroundTint="@color/Grey"
-            android:text="Save as pdf.">
+            android:text="Save as PDF">
 
         </Button>
 

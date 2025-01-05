@@ -5,21 +5,21 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.example.myapplication.Model.User;
 import com.example.myapplication.databinding.ActivityAccountsBinding;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
@@ -33,6 +33,7 @@ public class Accounts extends AppCompatActivity {
     private RecyclerView recyclerViewAccounts;
     private UserAdapter userAdapter;
     private List<User> userList = new ArrayList<>();
+    private boolean isSuperAdmin = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,15 +47,12 @@ public class Accounts extends AppCompatActivity {
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         usersReference = database.getReference("users"); // Ensure the "users" node exists
 
-        // Get current user's role (for example, from SharedPreferences or Firebase)
-        String currentUserRole = "superadmin"; // Replace with actual logic to fetch role
-
         // Initialize RecyclerView
         recyclerViewAccounts = binding.recyclerViewAccounts; // From binding
         recyclerViewAccounts.setLayoutManager(new LinearLayoutManager(this));
 
-        // Initialize Adapter with role
-        userAdapter = new UserAdapter(userList, this, currentUserRole);
+        // Initialize Adapter
+        userAdapter = new UserAdapter(userList, this, getCurrentUserRole());
         recyclerViewAccounts.setAdapter(userAdapter);
 
         // Fetch user data
@@ -65,15 +63,7 @@ public class Accounts extends AppCompatActivity {
         addBTN = findViewById(R.id.AccountAdd);
 
         // Check if the current user is a superadmin
-        if ("superadmin".equals(currentUserRole)) {
-            // Show add button if superadmin
-            addBTN.setVisibility(View.VISIBLE);  // Or make it enabled
-        } else {
-            // Hide add button if not superadmin
-            addBTN.setVisibility(View.GONE); // Or make it disabled
-        }
-
-
+        checkSuperAdminStatus();
 
         // Set back button listener
         backBTN.setOnClickListener(v -> {
@@ -116,10 +106,57 @@ public class Accounts extends AppCompatActivity {
         });
     }
 
+    private void checkSuperAdminStatus() {
+        String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        DatabaseReference currentUserRef = usersReference.child(currentUserId);
+
+        currentUserRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                String role = dataSnapshot.child("role").getValue(String.class);
+                if ("superadmin".equalsIgnoreCase(role)) {
+                    isSuperAdmin = true;
+                    addBTN.setVisibility(View.VISIBLE); // Show add button if superadmin
+                } else {
+                    isSuperAdmin = false;
+                    addBTN.setVisibility(View.GONE); // Hide add button if not superadmin
+                }
+                userAdapter.setSuperAdmin(isSuperAdmin); // Update adapter with superadmin status
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.e("Accounts", "Failed to fetch user role", databaseError.toException());
+            }
+        });
+    }
+
+    private String getCurrentUserRole() {
+        String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        DatabaseReference currentUserRef = usersReference.child(currentUserId);
+        final String[] role = {null};
+
+        currentUserRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                role[0] = dataSnapshot.child("role").getValue(String.class);
+                if (role[0] == null) {
+                    role[0] = "user"; // Default role if not found
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.e("Accounts", "Failed to fetch user role", databaseError.toException());
+            }
+        });
+
+        return role[0];
+    }
+
     // Handle account deletion with a confirmation dialog (only for superadmin)
-    public void deleteAccount(final String userId, final String currentUserRole) {
-        // Check if the current user has the role of 'superadmin'
-        if ("superadmin".equals(currentUserRole)) {
+    public void deleteAccount(final String userId) {
+        if (isSuperAdmin) {
             // Create confirmation dialog
             new AlertDialog.Builder(this)
                     .setTitle("Delete Account")
