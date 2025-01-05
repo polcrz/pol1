@@ -34,16 +34,13 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 public class salesPopUp extends AppCompatActivity {
 
     private TextView salesTextView; // TextView to display vendor names and their total sales
     private TextView generatedDateTextView; // TextView to display the report generation date
     private Button savePdfButton; // Button to save the report as a PDF
-
     private Button back;
 
     @Override
@@ -90,6 +87,7 @@ public class salesPopUp extends AppCompatActivity {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 StringBuilder salesReport = new StringBuilder();
+                double totalDailySales = 0.0, totalWeeklySales = 0.0, totalMonthlySales = 0.0, totalYearlySales = 0.0;
 
                 // Get the current date when the report is generated
                 String currentDate = getCurrentDate();
@@ -142,14 +140,18 @@ public class salesPopUp extends AppCompatActivity {
                             // Append vendor data to the report
                             salesReport.append(String.format("Name: %s\n", vendorName));
                             salesReport.append(String.format("Today's Sales: ₱%.2f\n", dailySales));
+                            totalDailySales += dailySales;
                             salesReport.append("\n");
                             salesReport.append(String.format("Weekly Sales: ₱%.2f\n", weeklySales));
+                            totalWeeklySales += weeklySales;
                             salesReport.append(String.format("Week: %s\n", weekRange)); // Added week range
                             salesReport.append("\n");
                             salesReport.append(String.format("Monthly Sales: ₱%.2f\n", monthlySales));
+                            totalMonthlySales += monthlySales;
                             salesReport.append(String.format("Month: %s\n", currentMonth)); // Added current month
                             salesReport.append("\n");
                             salesReport.append(String.format("Yearly Sales: ₱%.2f\n", yearlySales));
+                            totalYearlySales += yearlySales;
                             salesReport.append(String.format("Year: %s\n", currentYear)); // Added current year
                             salesReport.append("-----------------------------------------\n");
                             salesReport.append("\n");
@@ -158,6 +160,14 @@ public class salesPopUp extends AppCompatActivity {
                         Log.e("salesPopUp", "Error processing user data: " + e.getMessage(), e);
                     }
                 }
+
+                // Append total sales to the report
+                salesReport.append("Total Sales:\n");
+                salesReport.append(String.format("Today's Total Sales: ₱%.2f\n", totalDailySales));
+                salesReport.append(String.format("Weekly Total Sales: ₱%.2f\n", totalWeeklySales));
+                salesReport.append(String.format("Monthly Total Sales: ₱%.2f\n", totalMonthlySales));
+                salesReport.append(String.format("Yearly Total Sales: ₱%.2f\n", totalYearlySales));
+                salesReport.append("-----------------------------------------\n");
 
                 // Update the main sales report TextView
                 salesTextView.setText(salesReport.toString());
@@ -178,10 +188,15 @@ public class salesPopUp extends AppCompatActivity {
 
     // Get the week range for the current week
     private String getWeekRange() {
-        // Define the specific date range for the weekly sales
-        String weekStart = "January 1, 2025";
-        String weekEnd = "January 7, 2025";
-        return weekStart + " - " + weekEnd;
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.DAY_OF_MONTH, 1); // Start of the month
+        Date weekStart = calendar.getTime();
+
+        calendar.add(Calendar.DAY_OF_MONTH, 6); // End of the first week
+        Date weekEnd = calendar.getTime();
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault());
+        return dateFormat.format(weekStart) + " - " + dateFormat.format(weekEnd);
     }
 
     // Get the current month

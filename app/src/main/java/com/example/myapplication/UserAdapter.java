@@ -6,7 +6,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,6 +29,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     private Context context;
     private DatabaseReference usersReference;
     private String currentUserRole; // Add a field to hold the role of the current user
+    private boolean isSuperAdmin; // Add a field to hold the superadmin status
 
     public UserAdapter(List<User> userList, Context context, String currentUserRole) {
         this.userList = userList;
@@ -60,7 +60,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                 .into(holder.imageViewUser);
 
         // Show or hide the Delete button based on the role
-        if ("superadmin".equals(currentUserRole)) {
+        if (isSuperAdmin) {
             holder.buttonDelete.setVisibility(View.VISIBLE); // Show button for superAdmin
         } else {
             holder.buttonDelete.setVisibility(View.GONE); // Hide button for non-superAdmins
@@ -68,7 +68,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
         // Handle delete button click
         holder.buttonDelete.setOnClickListener(v -> {
-            if ("superadmin".equals(currentUserRole)) { // Check if current user is a superAdmin
+            if (isSuperAdmin) { // Check if current user is a superAdmin
                 showDeleteConfirmationDialog(user.getEmail());
             } else {
                 Toast.makeText(context, "You do not have permission to delete an account.", Toast.LENGTH_SHORT).show();
@@ -79,6 +79,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     @Override
     public int getItemCount() {
         return userList.size();
+    }
+
+    public void setSuperAdmin(boolean isSuperAdmin) {
+        this.isSuperAdmin = isSuperAdmin;
+        notifyDataSetChanged(); // Notify the adapter to refresh the list
     }
 
     private void deleteUser(String email) {
@@ -125,4 +130,3 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         }
     }
 }
-

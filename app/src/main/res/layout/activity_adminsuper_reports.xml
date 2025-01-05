@@ -7,24 +7,51 @@
     android:layout_height="match_parent"
     tools:context=".AdminsuperReports">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+
+    <Button
+        android:id="@+id/saveAsPdf"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:backgroundTint="@color/Grey"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="8dp"
+        android:text="Save as PDF"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/backBTN"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+
+        android:text="Back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:layout_marginBottom="15dp"
         android:gravity="center"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         app:layout_constraintBottom_toTopOf="@+id/scrollView4"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintHorizontal_bias="0.059"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.914">
+        app:layout_constraintVertical_bias="1.0">
 
 
         <Spinner
             android:id="@+id/mySpinner"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="10dp"
+            android:layout_margin="5dp"
             android:background="@drawable/spinner_border"
             android:scrollbarSize="20dp"
             android:textAlignment="center"
@@ -39,7 +66,7 @@
             android:id="@+id/generate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="10dp"
+            android:layout_margin="5dp"
             android:background="@drawable/spinner_border"
             android:clickable="true"
             android:focusable="true"
@@ -53,26 +80,13 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.127" />
 
-        <Button
-            android:id="@+id/saveAsPdf"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:padding="8dp"
-            android:text="Save as PDF"
-            android:textSize="18sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
 
     </LinearLayout>
 
     <ScrollView
         android:id="@+id/scrollView4"
         android:layout_width="match_parent"
-        android:layout_margin="5dp"
-        android:layout_height="644dp"
+        android:layout_height="550dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -91,13 +105,14 @@
                 android:id="@+id/reportTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:layout_marginTop="20dp"
                 android:layout_marginBottom="20dp"
+                android:gravity="center"
                 android:text="Report"
                 android:textAlignment="center"
                 android:textSize="22sp"
                 android:textStyle="bold" />
-
 
 
             <!-- Title for Sales Report Section -->

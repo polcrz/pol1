@@ -147,7 +147,7 @@ public class adminSuperAdmin extends AppCompatActivity {
                 }
 
                 // Update the text in the CardView's TextView for total sales
-                salesTextView.setText(String.format("Today's Sales: PHP %.2f", totalSales));
+                salesTextView.setText(String.format("Today's Sales: \nPHP %.2f", totalSales));
             }
 
             @Override
